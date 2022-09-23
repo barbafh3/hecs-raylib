@@ -7,6 +7,7 @@ pub mod collision;
 pub mod step;
 pub mod draw;
 pub mod enums;
+pub mod tasks;
 
 extern crate pretty_env_logger;
 #[macro_use]
@@ -76,9 +77,9 @@ fn world_setup(world: &mut World, raylib_handle: &mut RaylibHandle, thread: &Ray
 
     spawn_hauler(
         world, 
-        Vector2 { x: 118.0, y: 48.0 }, 
+        Vector2 { x: 28.0, y: 28.0 }, 
         Vector2 { x: 6.0, y: 12.0 },
-        Some(Vector2 { x: 150.0, y: 150.0})
+        None
     );
 
     Ok(())

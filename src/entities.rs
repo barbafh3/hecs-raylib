@@ -1,10 +1,13 @@
-use std::collections::HashMap;
-
-use hecs::World;
+use hecs::{World, Entity};
 use raylib::prelude::*;
 use rand::prelude::*;
 
-use crate::{tilemap::Tileset, collision::CollisionBox, constants::{TILE_SIZE, DEFAULT_IDLE_POINT}, enums::GameResource};
+use crate::{
+    tilemap::Tileset, 
+    collision::{CollisionBox, TriggerCollision, BodyCollision}, 
+    constants::{TILE_SIZE, DEFAULT_IDLE_POINT}, 
+    enums::GameResource
+};
 
 
 // STRUCTS
@@ -31,7 +34,13 @@ impl IdleState {
     }
 }
 
-pub struct ColorBox(pub(crate) Rectangle);
+pub struct LoadingState {
+    pub target_position: Vector2
+}
+
+pub struct CarryingState {
+    pub target_position: Vector2
+}
 
 #[derive(Clone)]
 pub struct Sprite {
@@ -57,14 +66,7 @@ pub struct Backpack {
     pub item: Option<GameResource>
 }
 
-pub struct HaulTask {
-    pub origin: i32,
-    pub destination: i32,
-    pub resource: GameResource,
-    pub amount: i32
-}
-
-pub fn spawn_hauler(world: &mut World, position: Vector2, atlas_tile: Vector2, opt_idle_point: Option<Vector2>) {
+pub fn spawn_hauler(world: &mut World, position: Vector2, atlas_tile: Vector2, opt_idle_point: Option<Vector2>) -> Entity {
     let sprite = Sprite::new(
         position,
         atlas_tile,
@@ -82,18 +84,25 @@ pub fn spawn_hauler(world: &mut World, position: Vector2, atlas_tile: Vector2, o
         None => idle_point = DEFAULT_IDLE_POINT
     }
 
-    world.spawn((
+    let hauler = world.spawn((
         Hauler, 
         IdleState::default(idle_point),
         sprite, 
-        CollisionBox(rect)
+        CollisionBox {
+            rect
+        },
+        BodyCollision {
+            colliding: false
+        }
     ));
+
+    return hauler;
 }
 
 pub fn draw_sprites(world: &mut World,draw_handle: &mut RaylibMode2D<RaylibDrawHandle>) {
     let mut query = world.query::<&Sprite>();
-    let mut tileset_query = world.query::<(&Tileset, &Texture2D)>();
-    for (_, (_, tileset)) in tileset_query.into_iter() {
+    let mut tileset_query = world.query::<&Texture2D>().with::<Tileset>();
+    for (_, tileset) in tileset_query.into_iter() {
         for (_, sprite) in query.into_iter() {
             draw_handle.draw_texture_rec(
                 tileset,
@@ -140,3 +149,10 @@ pub fn idle_move(idle_state: &mut IdleState, sprite: &mut Sprite, delta: f32) {
     sprite.position += vector * 50.0 * delta;
 }
 
+pub fn update_collision_box_position(world: &mut World) {
+    let query = world.query_mut::<(&Sprite, &mut CollisionBox)>();
+    for (_, (sprite, collision_box)) in query.into_iter() {
+        collision_box.rect.x = sprite.position.x;
+        collision_box.rect.y = sprite.position.y;
+    }
+}

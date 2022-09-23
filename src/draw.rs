@@ -1,7 +1,7 @@
 use hecs::World;
 use raylib::prelude::*;
 
-use crate::{tilemap::draw_tilemap, entities::draw_sprites, ui::{draw_mouse_selection, draw_ui}};
+use crate::{tilemap::draw_tilemap, entities::draw_sprites, ui::{draw_mouse_selection, draw_ui}, collision::draw_collisions};
 
 
 pub fn draw_game(world: &mut World, raylib_handle: &mut RaylibHandle, thread: &RaylibThread, camera: &Camera2D) {
@@ -16,6 +16,7 @@ pub fn draw_game(world: &mut World, raylib_handle: &mut RaylibHandle, thread: &R
 
         draw_tilemap(world, &mut mode2d);
         draw_sprites(world, &mut mode2d);
+        draw_collisions(world, &mut mode2d);
 
         draw_mouse_selection(world, &mut mode2d, mouse_pos);
     }
