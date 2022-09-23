@@ -6,7 +6,7 @@ use crate::{
     tilemap::Tileset, 
     collision::{CollisionBox, TriggerCollision, BodyCollision}, 
     constants::{TILE_SIZE, DEFAULT_IDLE_POINT}, 
-    enums::GameResource
+    enums::{GameResource, CollisionType}
 };
 
 
@@ -66,7 +66,13 @@ pub struct Backpack {
     pub item: Option<GameResource>
 }
 
-pub fn spawn_hauler(world: &mut World, position: Vector2, atlas_tile: Vector2, opt_idle_point: Option<Vector2>) -> Entity {
+pub fn spawn_hauler(
+    world: &mut World, 
+    position: Vector2, 
+    atlas_tile: Vector2, 
+    collision_type: CollisionType,
+    opt_idle_point: Option<Vector2>
+) -> Entity {
     let sprite = Sprite::new(
         position,
         atlas_tile,
@@ -84,17 +90,52 @@ pub fn spawn_hauler(world: &mut World, position: Vector2, atlas_tile: Vector2, o
         None => idle_point = DEFAULT_IDLE_POINT
     }
 
-    let hauler = world.spawn((
-        Hauler, 
-        IdleState::default(idle_point),
-        sprite, 
-        CollisionBox {
-            rect
+    let hauler: Entity;
+
+    match collision_type {
+        CollisionType::Body => {
+            hauler = world.spawn((
+                Hauler, 
+                IdleState::default(idle_point),
+                sprite, 
+                CollisionBox {
+                    rect
+                },
+                BodyCollision {
+                    colliding: false
+                }
+            ));
         },
-        BodyCollision {
-            colliding: false
+        CollisionType::Trigger => {
+            hauler = world.spawn((
+                Hauler, 
+                IdleState::default(idle_point),
+                sprite, 
+                CollisionBox {
+                    rect
+                },
+                TriggerCollision {
+                    colliding: false
+                }
+            ));
+        },
+        CollisionType::All => {
+            hauler = world.spawn((
+                Hauler, 
+                IdleState::default(idle_point),
+                sprite, 
+                CollisionBox {
+                    rect
+                },
+                BodyCollision {
+                    colliding: false
+                },
+                TriggerCollision {
+                    colliding: false
+                }
+            ));
         }
-    ));
+    }
 
     return hauler;
 }

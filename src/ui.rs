@@ -3,19 +3,92 @@ use raylib::prelude::RaylibDraw;
 use raylib::{prelude::*, texture::Texture2D};
 
 use crate::constants::TILE_SIZE;
+use crate::enums::ButtonState;
 use crate::tilemap::Tileset;
 
 // TAGS ------
 pub struct MouseSelection;
 pub struct DebugUI;
+pub struct UIAtlas;
+pub struct CameraZoom(pub(crate) f32);
+
+// STRUCTS ------
+pub struct Button {
+    pub rect: Rectangle,
+    pub state: ButtonState,
+    pub position: Vector2,
+    pub action: Option<fn(&mut World) -> ()>,
+    pub handle_action: Option<fn(&mut World, &mut RaylibDrawHandle) -> ()>,
+}
+
+impl Button {
+    pub fn new(
+        position: Vector2, 
+        atlas_tile: Vector2, 
+        action: Option<fn(&mut World) -> ()>,
+        handle_action: Option<fn(&mut World, &mut RaylibDrawHandle) -> ()>,
+    ) -> Button {
+        Button {
+            position,
+            state: ButtonState::Normal,
+            action,
+            handle_action,
+            rect: Rectangle {
+                x: atlas_tile.x * TILE_SIZE,
+                y: atlas_tile.y * TILE_SIZE,
+                width: TILE_SIZE,
+                height: TILE_SIZE
+            }
+        }
+    }
+}
 
 // FUNCTIONS ------
 pub fn draw_ui(world: &mut World, draw_handle: &mut RaylibDrawHandle) {
     // draw_handle.draw_text("Hello, world!", 12, 12, 20, Color::BLACK);
 
-    let mut debug_query = world.query::<&DebugUI>();
-    for (_, _) in debug_query.into_iter() {
-        draw_handle.draw_fps(10, 10);
+    {
+        let mut debug_query = world.query::<&DebugUI>();
+        for (_, _) in debug_query.into_iter() {
+            draw_handle.draw_fps(10, 10);
+        }
+    }
+
+    draw_ui_buttons(world, draw_handle);
+}
+
+pub fn draw_ui_buttons(world: &mut World, draw_handle: &mut RaylibDrawHandle) {
+    let mut tileset_query = world.query::<&Texture2D>().with::<UIAtlas>();
+    let (_, tileset) = tileset_query.into_iter().nth(0).unwrap();
+    let mut zoom_query = world.query::<&CameraZoom>();
+    let (_, CameraZoom(zoom)) = zoom_query.into_iter().nth(0).unwrap();
+    let mut query = world.query::<&Button>();
+    for (_, button) in query.into_iter() {
+        let mut src = button.rect.clone();
+        match button.state {
+            ButtonState::Hover => {
+                src.x = src.x + 16.0;
+                src.y = 0.0;
+            },
+            ButtonState::Pressed => {
+                src.x = src.x + 32.0;
+                src.y = 0.0;
+            },
+            _ => {}
+        }
+        let dest = Rectangle { 
+            x: button.position.x,
+            y: button.position.y - (TILE_SIZE * zoom),
+            width: TILE_SIZE * zoom,
+            height: TILE_SIZE * zoom,
+        };
+        draw_handle.draw_texture_pro(
+            tileset,
+            src,
+            dest,
+            Vector2::zero(),
+            0.0,
+            Color::WHITE);
     }
 }
 
@@ -55,6 +128,23 @@ pub fn draw_mouse_selection(world: &mut World, draw_handle: &mut RaylibMode2D<Ra
     }
 }
 
+pub fn spawn_button(
+    world: &mut World, 
+    position: Vector2, 
+    atlas_tile: Vector2, 
+    action: Option<fn(&mut World) -> ()>,
+    handle_action: Option<fn(&mut World, &mut RaylibDrawHandle) -> ()>,
+) -> Entity {
+    let button = Button::new(
+        position,
+        atlas_tile,
+        action,
+        handle_action,
+    );
+
+    return world.spawn((button,));
+}
+
 pub fn toggle_mouse_selection(world: &mut World) {
     let mut entity_list: Vec<Entity> = vec![];
     {
@@ -74,7 +164,7 @@ pub fn toggle_mouse_selection(world: &mut World) {
     }
 }
 
-pub fn toggle_debug_ui(world: &mut World, enable: bool) {
+pub fn toggle_debug_ui(world: &mut World) {
     let mut entity_list: Vec<Entity> = vec![];
     {
         let mut selection_query = world.query::<&DebugUI>();
@@ -84,10 +174,8 @@ pub fn toggle_debug_ui(world: &mut World, enable: bool) {
             }
         }
     }
-    if enable {
-        if entity_list.len() <= 0 {
-            world.spawn((DebugUI,));
-        }
+    if entity_list.len() <= 0 {
+        world.spawn((DebugUI,));
     } else {
         for entity in entity_list {
             world.despawn(entity).unwrap();

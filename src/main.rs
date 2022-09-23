@@ -14,16 +14,18 @@ extern crate pretty_env_logger;
 extern crate log;
 
 use draw::draw_game;
-use constants::{TILESET_PATH, SCREEN_WIDTH, SCREEN_HEIGHT, DEFAULT_IDLE_POINT_ATLAS_TILE, DEFAULT_IDLE_POINT};
+use constants::{TILESET_PATH, SCREEN_WIDTH, SCREEN_HEIGHT, DEFAULT_IDLE_POINT_ATLAS_TILE, DEFAULT_IDLE_POINT, UI_ATLAS_PATH, TILE_SIZE};
 use entities::{spawn_hauler, Sprite};
+use enums::CollisionType;
 use hecs::World;
-use input::read_inputs;
+use input::{read_inputs, toggle_draw_collisions, toggle_debug_text};
 use raylib::{
     prelude::*, 
     math::Vector2,
 };
 use step::update_game;
 use tilemap::{Tileset, generate_tilemap};
+use ui::{UIAtlas, spawn_button, CameraZoom, toggle_debug_ui};
 
 fn main() -> Result<(), String>{
     pretty_env_logger::init();
@@ -40,19 +42,25 @@ fn main() -> Result<(), String>{
         return Err(err)
     }
 
+    let zoom = 2.0;
+
     let mut camera = Camera2D {
         offset: Vector2::zero(), 
         target: Vector2::zero(), 
         rotation: 0.0, 
-        zoom: 2.0
+        zoom
     };
+    world.spawn((CameraZoom(zoom),));
 
     raylib_handle.set_target_fps(60);
 
     while !raylib_handle.window_should_close() {
-        read_inputs(&mut world, &mut raylib_handle, &mut camera);
         update_game(&mut world, &mut raylib_handle);
-        draw_game(&mut world, &mut raylib_handle, &thread, &camera);
+        let mut draw_handle = raylib_handle.begin_drawing(&thread);
+        {
+            draw_game(&mut world, &mut draw_handle, &camera);
+        }
+        read_inputs(&mut world, &mut draw_handle, &mut camera);
     }
 
     Ok(())
@@ -72,6 +80,7 @@ fn world_setup(world: &mut World, raylib_handle: &mut RaylibHandle, thread: &Ray
         world, 
         Vector2 { x: 48.0, y: 48.0 }, 
         Vector2 { x: 6.0, y: 12.0 },
+        CollisionType::Body,
         None
     );
 
@@ -79,7 +88,32 @@ fn world_setup(world: &mut World, raylib_handle: &mut RaylibHandle, thread: &Ray
         world, 
         Vector2 { x: 28.0, y: 28.0 }, 
         Vector2 { x: 6.0, y: 12.0 },
+        CollisionType::Trigger,
         None
+    );
+
+    spawn_hauler(
+        world, 
+        Vector2 { x: 28.0, y: 28.0 }, 
+        Vector2 { x: 6.0, y: 12.0 },
+        CollisionType::All,
+        None
+    );
+
+    spawn_button(
+        world, 
+        Vector2 { x: 10.0, y: (SCREEN_HEIGHT as f32) - 10.0 }, 
+        Vector2 { x: 0.0, y: 0.0 },
+        Some(toggle_draw_collisions),
+        None,
+    );
+
+    spawn_button(
+        world, 
+        Vector2 { x: 50.0, y: (SCREEN_HEIGHT as f32) - 10.0 }, 
+        Vector2 { x: 48.0, y: 0.0 },
+        Some(toggle_debug_text),
+        None,
     );
 
     Ok(())
@@ -100,7 +134,22 @@ pub fn load_tileset(world: &mut World, raylib_handle: &mut RaylibHandle, thread:
         }
     }
 
+    let ui_atlas: Texture2D;
+    let result = raylib_handle
+            .load_texture(&thread, UI_ATLAS_PATH);
+    match result {
+        Ok(texture) => {
+            ui_atlas = texture;
+            info!("UI atlas loaded");
+        },
+        Err(..) => {
+            error!("Failed to load tileset on path {:?}", UI_ATLAS_PATH);
+            return Err("Crash".to_string());
+        }
+    }
+
     world.spawn((Tileset, tileset));
+    world.spawn((UIAtlas, ui_atlas));
 
     Ok(())
 }

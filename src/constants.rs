@@ -4,6 +4,7 @@ pub const SCREEN_WIDTH: i32 = 1280;
 pub const SCREEN_HEIGHT: i32 = 720;
 
 pub const TILESET_PATH: &str = "assets/tileset.png";
+pub const UI_ATLAS_PATH: &str = "assets/ui.png";
 
 pub const CAMERA_SPEED: f32 = 10.0;
 

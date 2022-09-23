@@ -4,8 +4,7 @@ use raylib::prelude::*;
 use crate::{tilemap::draw_tilemap, entities::draw_sprites, ui::{draw_mouse_selection, draw_ui}, collision::draw_collisions};
 
 
-pub fn draw_game(world: &mut World, raylib_handle: &mut RaylibHandle, thread: &RaylibThread, camera: &Camera2D) {
-    let mut draw_handle = raylib_handle.begin_drawing(&thread);
+pub fn draw_game(world: &mut World, draw_handle: &mut RaylibDrawHandle, camera: &Camera2D) {
     draw_handle.clear_background(Color::RAYWHITE);
 
     {
@@ -21,5 +20,5 @@ pub fn draw_game(world: &mut World, raylib_handle: &mut RaylibHandle, thread: &R
         draw_mouse_selection(world, &mut mode2d, mouse_pos);
     }
 
-    draw_ui(world, &mut draw_handle);
+    draw_ui(world, draw_handle);
 }

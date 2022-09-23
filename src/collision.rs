@@ -17,7 +17,15 @@ pub struct CollisionBox {
   pub rect: Rectangle
 }
 
+
 // FUNCTIONS ------
+pub fn is_point_inside_box(point: &Vector2, col_box: &Rectangle) -> bool {
+  return point.x >= col_box.x &&
+    point.x <= (col_box.x + col_box.width - 1.0) &&
+    point.y >= col_box.y &&
+    point.y <= (col_box.y + col_box.height - 1.0);
+}
+
 pub fn are_boxes_colliding(box1: &Rectangle, box2: &Rectangle) -> bool {
   if (box1.x + box1.width - 1.0) >= box2.x &&    // box1 right edge past box2 left
       box1.x <= box2.x + box2.width - 1.0 &&    // box1 left edge past box2 right
@@ -83,24 +91,34 @@ pub fn draw_collisions(world: &mut World, draw_handle: &mut RaylibMode2D<RaylibD
 
   if draw_collisions_enabled {
     for (_, (col_body, col_box)) in &mut world.query::<(&BodyCollision, &CollisionBox)>() {
-        if col_body.colliding {
-        draw_handle.draw_rectangle(
-          col_box.rect.x as i32, 
-          col_box.rect.y as i32, 
-          TILE_SIZE as i32, 
-          TILE_SIZE as i32, 
-          Color { r: 230, g: 41, b: 55, a: 170 });
+      let selected_color: Color;
+      if col_body.colliding {
+          selected_color = Color { r: 230, g: 41, b: 55, a: 170 };
+      } else {
+          selected_color = Color { r: 0, g: 121, b: 241, a: 170 };
       }
+
+      draw_handle.draw_rectangle(
+        col_box.rect.x as i32, 
+        col_box.rect.y as i32, 
+        TILE_SIZE as i32, 
+        TILE_SIZE as i32, 
+        selected_color);
     }
     for (_, (col_trigger, col_box)) in &mut world.query::<(&TriggerCollision, &CollisionBox)>() {
-        if col_trigger.colliding {
-        draw_handle.draw_rectangle(
-          col_box.rect.x as i32, 
-          col_box.rect.y as i32, 
-          TILE_SIZE as i32, 
-          TILE_SIZE as i32, 
-          Color { r: 253, g: 249, b: 0, a: 170 });
+      let selected_color: Color;
+      if col_trigger.colliding {
+          selected_color = Color { r: 253, g: 249, b: 0, a: 170 };
+      } else {
+          selected_color = Color { r: 0, g: 121, b: 241, a: 170 };
       }
+
+      draw_handle.draw_rectangle(
+        col_box.rect.x as i32, 
+        col_box.rect.y as i32, 
+        TILE_SIZE as i32, 
+        TILE_SIZE as i32, 
+        selected_color);
     }
   }
 }
