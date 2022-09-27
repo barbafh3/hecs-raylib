@@ -1,7 +1,13 @@
 use hecs::World;
 use raylib::prelude::*;
 
-use crate::{tilemap::draw_tilemap, entities::draw_sprites, ui::{draw_mouse_selection, draw_ui}, collision::draw_collisions};
+use crate::{
+    tilemap::draw_tilemap, 
+    game_core::ui::{draw_mouse_selection, draw_ui}, 
+    game_core::collision::draw_collisions, TILESET
+};
+
+use super::datatypes::Sprite;
 
 
 pub fn draw_game(world: &mut World, draw_handle: &mut RaylibDrawHandle, camera: &Camera2D) {
@@ -21,4 +27,16 @@ pub fn draw_game(world: &mut World, draw_handle: &mut RaylibDrawHandle, camera: 
     }
 
     draw_ui(world, draw_handle);
+}
+
+
+pub fn draw_sprites(world: &mut World,draw_handle: &mut RaylibMode2D<RaylibDrawHandle>) {
+    let mut query = world.query::<&Sprite>();
+    query.into_iter().for_each(|(_, sprite)| {
+        draw_handle.draw_texture_rec(
+            TILESET.get().unwrap(),
+            sprite.rect,
+            sprite.position,
+            Color::WHITE);
+    });
 }

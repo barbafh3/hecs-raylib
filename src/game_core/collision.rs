@@ -1,7 +1,7 @@
 use hecs::{World, Entity};
 use raylib::prelude::*;
 
-use crate::constants::TILE_SIZE;
+use crate::game_core::constants::TILE_SIZE;
 
 // TAGS ------
 pub struct DrawCollisions;
@@ -90,13 +90,16 @@ pub fn draw_collisions(world: &mut World, draw_handle: &mut RaylibMode2D<RaylibD
   }
 
   if draw_collisions_enabled {
-    for (_, (col_body, col_box)) in &mut world.query::<(&BodyCollision, &CollisionBox)>() {
+    let mut drawn_entities: Vec<Entity> = vec![];
+    for (ety, (col_body, col_box)) in &mut world.query::<(&BodyCollision, &CollisionBox)>() {
       let selected_color: Color;
       if col_body.colliding {
           selected_color = Color { r: 230, g: 41, b: 55, a: 170 };
       } else {
           selected_color = Color { r: 0, g: 121, b: 241, a: 170 };
       }
+
+      drawn_entities.push(ety);
 
       draw_handle.draw_rectangle(
         col_box.rect.x as i32, 
@@ -105,12 +108,15 @@ pub fn draw_collisions(world: &mut World, draw_handle: &mut RaylibMode2D<RaylibD
         TILE_SIZE as i32, 
         selected_color);
     }
-    for (_, (col_trigger, col_box)) in &mut world.query::<(&TriggerCollision, &CollisionBox)>() {
-      let selected_color: Color;
+    for (ety, (col_trigger, col_box)) in &mut world.query::<(&TriggerCollision, &CollisionBox)>() {
+      let mut selected_color: Color = Color::WHITE;
+      selected_color.a = 0;
       if col_trigger.colliding {
           selected_color = Color { r: 253, g: 249, b: 0, a: 170 };
       } else {
+        if !drawn_entities.contains(&ety) {
           selected_color = Color { r: 0, g: 121, b: 241, a: 170 };
+        }
       }
 
       draw_handle.draw_rectangle(

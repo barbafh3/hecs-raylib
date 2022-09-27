@@ -3,7 +3,8 @@ use rand::Rng;
 use raylib::prelude::*;
 use raylib::texture::Texture2D;
 
-use crate::constants::TILE_SIZE;
+use crate::TILESET;
+use crate::game_core::constants::TILE_SIZE;
 
 // TAGS ------
 pub struct Tileset;
@@ -77,12 +78,9 @@ pub fn generate_tilemap(world: &mut World, width: i32, height: i32) {
 
 pub fn draw_tilemap(world: &mut World, draw_handle: &mut RaylibMode2D<RaylibDrawHandle>) {
     let mut query = world.query::<&Tilemap>();
-    let mut tileset_query = world.query::<&Texture2D>().with::<Tileset>();
     for (_, tilemap) in query.into_iter() {
         tilemap.get_tiles().into_iter().for_each(|tile| {
-            for (_, tileset) in tileset_query.into_iter() {
-                draw_tile(draw_handle, &tileset, &tile);
-            }
+            draw_tile(draw_handle, &TILESET.get().unwrap(), &tile);
         });
     }
 }

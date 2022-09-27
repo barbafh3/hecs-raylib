@@ -1,6 +1,8 @@
 use hecs::{World, Entity};
 
-use crate::{enums::GameResource, entities::Hauler};
+use crate::{
+    game_core::enums::GameResource, villagers::datatypes::Hauler, 
+};
 
 pub struct HaulTask {
     pub origin: i32,

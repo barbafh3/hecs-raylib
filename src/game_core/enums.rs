@@ -11,9 +11,10 @@ pub enum CollisionType {
     All
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ButtonState {
     Normal,
-    Hover,
-    Pressed
+    Hovered,
+    Pressed,
+    Toggled
 }
