@@ -1,10 +1,11 @@
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub enum GameResource {
+    #[default]
     Wood,
     Stone
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CollisionType {
     Body,
     Trigger,
@@ -17,4 +18,12 @@ pub enum ButtonState {
     Hovered,
     Pressed,
     Toggled
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum VillagerState {
+    Idle,
+    Loading,
+    Carrying,
+    Working
 }

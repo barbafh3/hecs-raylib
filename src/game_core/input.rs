@@ -6,12 +6,9 @@ use raylib::consts::MouseButton::*;
 use crate::game_core::collision::{DrawCollisions, is_point_inside_box};
 use crate::game_core::constants::{CAMERA_SPEED, TILE_SIZE};
 use crate::game_core::enums::ButtonState;
-use crate::game_core::enums::GameResource;
-use crate::tasks::HaulTask;
 use crate::game_core::ui::CameraZoom;
 use crate::game_core::ui::ToggleButton;
 use crate::game_core::ui::{DebugUI, toggle_mouse_selection, Button};
-use crate::villagers::datatypes::Hauler;
 
 // FUNCTIONS ------
 pub fn game_input(
@@ -101,32 +98,6 @@ pub fn check_debug_button_click(world: &mut World, raylib_handle: &mut RaylibHan
 
     functions.iter().for_each(|function| function(world));
     handle_functions.iter().for_each(|function| function(world, raylib_handle));
-}
-
-pub fn give_haul_task(world: &mut World) {
-    let mut selected_hauler: Option<Entity> = None;
-
-    {
-        let query = &mut world.query::<&Hauler>().without::<HaulTask>();
-        query.into_iter().for_each(|(ety, _)| {
-            println!("Hauler: {:?}", ety);
-            if selected_hauler.is_none() {
-                selected_hauler = Some(ety);
-            }
-        });
-    }
-
-
-    if let Some(hauler) = selected_hauler {
-        let haul_task = HaulTask {
-            origin: 0,
-            destination: 0,
-            resource: GameResource::Wood,
-            resource_amount: 100,
-            delivered_amount: 0
-        };
-        world.insert(hauler, (haul_task,)).unwrap();
-    }
 }
 
 pub fn read_camera_input(raylib_handle: &mut RaylibHandle, target: Vector2) -> Vector2 {

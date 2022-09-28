@@ -32,8 +32,10 @@ fn main() -> Result<(), String>{
 
     let mut world = World::new();
 
-    if let Err(err) = world_setup(&mut world, &mut raylib_handle, &thread) {
-        return Err(err)
+    let font: Font;
+    match world_setup(&mut world, &mut raylib_handle, &thread) {
+        Err(err) => return Err(err),
+        Ok(f) => font = f,
     }
 
     let zoom = 2.0;
@@ -53,7 +55,7 @@ fn main() -> Result<(), String>{
         update_game(&mut world, &mut raylib_handle);
 
         let mut draw_handle = raylib_handle.begin_drawing(&thread);
-        draw_game(&mut world, &mut draw_handle, &camera);
+        draw_game(&mut world, &mut draw_handle, &camera, &font);
     }
 
     Ok(())

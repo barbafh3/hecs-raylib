@@ -2,6 +2,10 @@ use raylib::prelude::*;
 
 use super::constants::TILE_SIZE;
 
+pub struct Fonts {
+    pub base_font: Font
+}
+
 #[derive(Clone)]
 pub struct Sprite {
     pub rect: Rectangle,

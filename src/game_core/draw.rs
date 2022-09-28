@@ -10,7 +10,7 @@ use crate::{
 use super::datatypes::Sprite;
 
 
-pub fn draw_game(world: &mut World, draw_handle: &mut RaylibDrawHandle, camera: &Camera2D) {
+pub fn draw_game(world: &mut World, draw_handle: &mut RaylibDrawHandle, camera: &Camera2D, font: &Font) {
     draw_handle.clear_background(Color::RAYWHITE);
 
     {
@@ -26,7 +26,7 @@ pub fn draw_game(world: &mut World, draw_handle: &mut RaylibDrawHandle, camera: 
         draw_mouse_selection(world, &mut mode2d, mouse_pos);
     }
 
-    draw_ui(world, draw_handle);
+    draw_ui(world, draw_handle, font);
 }
 
 

@@ -7,9 +7,11 @@ use crate::game_core::constants::TILE_SIZE;
 pub struct DrawCollisions;
 
 // STRUCTS ------
+#[derive(Default)]
 pub struct BodyCollision {
   pub colliding: bool
 }
+#[derive(Default)]
 pub struct TriggerCollision {
   pub colliding: bool
 }

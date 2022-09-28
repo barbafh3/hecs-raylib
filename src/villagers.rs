@@ -10,7 +10,7 @@ use crate::{
     game_core::{enums::CollisionType, datatypes::Sprite}
 };
 
-use self::datatypes::{Hauler, IdleState};
+use self::datatypes::{Hauler, IdleState, Backpack, IdleInfo};
 
 
 pub fn spawn_hauler(
@@ -37,50 +37,31 @@ pub fn spawn_hauler(
         None => idle_point = DEFAULT_IDLE_POINT
     }
 
-    let hauler: Entity;
+    let hauler: Entity = world.spawn((
+        Hauler, 
+        IdleInfo::default(idle_point),
+        IdleState,
+        Backpack::default(),
+        sprite, 
+        CollisionBox {
+            rect
+    }));
 
     match collision_type {
         CollisionType::Body => {
-            hauler = world.spawn((
-                Hauler, 
-                IdleState::default(idle_point),
-                sprite, 
-                CollisionBox {
-                    rect
-                },
-                BodyCollision {
-                    colliding: false
-                }
-            ));
+            world.insert_one(hauler, BodyCollision::default()).unwrap();
         },
         CollisionType::Trigger => {
-            hauler = world.spawn((
-                Hauler, 
-                IdleState::default(idle_point),
-                sprite, 
-                CollisionBox {
-                    rect
-                },
-                TriggerCollision {
-                    colliding: false
-                }
-            ));
+            world.insert_one(hauler, TriggerCollision::default()).unwrap();
         },
         CollisionType::All => {
-            hauler = world.spawn((
-                Hauler, 
-                IdleState::default(idle_point),
-                sprite, 
-                CollisionBox {
-                    rect
-                },
-                BodyCollision {
-                    colliding: false
-                },
-                TriggerCollision {
-                    colliding: false
-                }
-            ));
+            world.insert_one(
+                hauler, 
+                (
+                    BodyCollision::default(), 
+                    TriggerCollision::default()
+                )
+            ).unwrap();
         }
     }
 

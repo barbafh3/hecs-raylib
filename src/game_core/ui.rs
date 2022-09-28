@@ -2,9 +2,13 @@ use hecs::{World, Entity};
 use raylib::prelude::RaylibDraw;
 use raylib::prelude::*;
 
+use crate::villagers::datatypes::{IdleState, LoadingState, CarryingState, WorkingState, Backpack, GameItem};
 use crate::{TILESET, UI_ATLAS};
 use crate::game_core::constants::TILE_SIZE;
 use crate::game_core::enums::ButtonState;
+
+use super::constants::SCREEN_WIDTH_F;
+use super::enums::VillagerState;
 
 // TAGS ------
 pub struct MouseSelection;
@@ -13,6 +17,10 @@ pub struct UIAtlas;
 pub struct CameraZoom(pub(crate) f32);
 
 // STRUCTS ------
+pub struct SelectedHauler {
+    pub hauler: Entity
+}
+
 pub struct Button {
     pub rect: Rectangle,
     pub state: ButtonState,
@@ -74,25 +82,90 @@ impl ToggleButton {
 }
 
 // FUNCTIONS ------
-pub fn draw_ui(world: &mut World, draw_handle: &mut RaylibDrawHandle) {
+pub fn draw_ui(world: &mut World, draw_handle: &mut RaylibDrawHandle, font: &Font) {
     // draw_handle.draw_text("Hello, world!", 12, 12, 20, Color::BLACK);
 
     {
         let mut debug_query = world.query::<&DebugUI>();
-        for (_, _) in debug_query.into_iter() {
+        debug_query.into_iter().for_each(|_| {
             draw_handle.draw_fps(10, 10);
-        }
+        });
     }
 
+    draw_selected_hauler_state(world, draw_handle, font);
     draw_ui_buttons(world, draw_handle);
     draw_ui_toggle_buttons(world, draw_handle);
+}
+
+pub fn draw_selected_hauler_state(world: &mut World, draw_handle: &mut RaylibDrawHandle, font: &Font) {
+    let mut selected_hauler_query = world.query::<&SelectedHauler>();
+    selected_hauler_query.into_iter().for_each(|(_, selected_hauler)| {
+        let mut m_state: Option<VillagerState> = None;
+        let mut backpack_item: Option<GameItem> = None;
+
+        let idle_query = world.get::<IdleState>(selected_hauler.hauler);
+        if let Ok(_) = idle_query {
+            m_state = Some(VillagerState::Idle);
+        }
+        let loading_query = world.get::<LoadingState>(selected_hauler.hauler);
+        if let Ok(_) = loading_query {
+            m_state = Some(VillagerState::Loading);
+        }
+        let carrying_query = world.get::<CarryingState>(selected_hauler.hauler);
+        if let Ok(_) = carrying_query {
+            m_state = Some(VillagerState::Carrying);
+        }
+        let working_query = world.get::<WorkingState>(selected_hauler.hauler);
+        if let Ok(_) = working_query {
+            m_state = Some(VillagerState::Working);
+        }
+        let backpack_query = world.get::<Backpack>(selected_hauler.hauler);
+        if let Ok(bp) = backpack_query {
+            backpack_item = bp.clone_item();
+        }
+
+        if let Some(state) = m_state {
+            let font_size: f32 = 11.4;
+            
+            let text = String::from(format!("Hauler state: {:?}", state));
+            let half_text_size = measure_text_ex(font, &text, font_size, 1.0) / 2.0;
+            draw_handle.draw_text_ex(
+                font, 
+                &text,
+                Vector2 {
+                    x: ((SCREEN_WIDTH_F / 2.0) - half_text_size.x),
+                    y: 12.0
+                },
+                font_size, 
+                1.0,
+                Color::BLACK
+            );
+            let text: String;
+            match backpack_item {
+                Some(item) => text = String::from(format!("Backpack Item: ({:?}, {:?})", item.resource, item.amount)),
+                None => text = String::from("Backpack Item: None"),
+            }
+            let half_text_size = measure_text_ex(font, &text, font_size, 1.0) / 2.0;
+            draw_handle.draw_text_ex(
+                font, 
+                &text,
+                Vector2 {
+                    x: (SCREEN_WIDTH_F / 2.0) - half_text_size.x,
+                    y: 32.0
+                },
+                font_size, 
+                1.0,
+                Color::BLACK
+            );
+        }
+    });
 }
 
 pub fn draw_ui_buttons(world: &mut World, draw_handle: &mut RaylibDrawHandle) {
     let mut zoom_query = world.query::<&CameraZoom>();
     let (_, CameraZoom(zoom)) = zoom_query.into_iter().nth(0).unwrap();
     let mut query = world.query::<&Button>();
-    for (_, button) in query.into_iter() {
+    query.into_iter().for_each(|(_, button)| {
         let mut src = button.rect.clone();
         match button.state {
             ButtonState::Hovered => {
@@ -118,7 +191,7 @@ pub fn draw_ui_buttons(world: &mut World, draw_handle: &mut RaylibDrawHandle) {
             Vector2::zero(),
             0.0,
             Color::WHITE);
-    }
+    });
 }
 
 pub fn draw_ui_toggle_buttons(world: &mut World, draw_handle: &mut RaylibDrawHandle) {

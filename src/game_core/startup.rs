@@ -1,23 +1,29 @@
 use hecs::World;
-use raylib::{RaylibHandle, RaylibThread, prelude::Vector2};
+use raylib::{RaylibHandle, RaylibThread, prelude::Vector2, text::Font};
 
 use crate::{
     tilemap::generate_tilemap, TILESET, UI_ATLAS, 
     villagers::spawn_hauler, 
-    buildings::spawn_warehouse
+    buildings::spawn_warehouse, tasks::give_haul_task_to_idle
 };
 
 use super::{
     constants::*, 
     enums::*, 
     datatypes::Sprite, 
-    ui::{spawn_toggle_button, spawn_button}, 
-    input::{toggle_draw_collisions, toggle_debug_text, give_haul_task}
+    ui::{spawn_toggle_button, spawn_button, SelectedHauler}, 
+    input::{toggle_draw_collisions, toggle_debug_text}
 };
 
-pub fn world_setup(world: &mut World, raylib_handle: &mut RaylibHandle, thread: &RaylibThread) -> Result<(), String> {
+pub fn world_setup(world: &mut World, raylib_handle: &mut RaylibHandle, thread: &RaylibThread) -> Result<Font, String> {
     if let Err(err) = load_tileset(raylib_handle, thread) {
         return Err(err)
+    }
+
+    let font: Font;
+    match raylib_handle.load_font(thread, FONT_PATH) {
+        Err(err) => return Err(err),
+        Ok(f) => font = f,
     }
 
     generate_tilemap(world, 100, 100);
@@ -26,7 +32,7 @@ pub fn world_setup(world: &mut World, raylib_handle: &mut RaylibHandle, thread: 
     spawn_villagers(world);
     spawn_ui(world);
 
-    Ok(())
+    Ok(font)
 }
 
 pub fn load_tileset(raylib_handle: &mut RaylibHandle, thread: &RaylibThread) -> Result<(), String> {
@@ -66,13 +72,14 @@ pub fn load_tileset(raylib_handle: &mut RaylibHandle, thread: &RaylibThread) -> 
 }
 
 pub fn spawn_villagers(world: &mut World) {
-    spawn_hauler(
+    let selected_hauler = spawn_hauler(
         world, 
         Vector2 { x: 48.0, y: 48.0 }, 
         Vector2 { x: 6.0, y: 12.0 },
         CollisionType::Body,
         None
     );
+    world.spawn((SelectedHauler { hauler: selected_hauler },));
 }
 
 pub fn spawn_buildings(world: &mut World) {
@@ -103,7 +110,7 @@ pub fn spawn_ui(world: &mut World) {
         world, 
         Vector2 { x: 90.0, y: (SCREEN_HEIGHT as f32) - 10.0 }, 
         Vector2 { x: 96.0, y: 0.0 },
-        Some(give_haul_task),
+        Some(give_haul_task_to_idle),
         None,
     );
 }
