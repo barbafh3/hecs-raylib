@@ -1,10 +1,9 @@
 use hecs::{Entity, World};
 use raylib::prelude::*;
 
-use crate::game_core::enums::*;
+use crate::engine::enums::*;
 
 // TAGS ------
-pub struct Hauler;
 pub struct WorkingState;
 
 // STRUCTS ------
@@ -69,10 +68,16 @@ impl CarryingState {
     }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct GameItem {
     pub resource: GameResource,
     pub amount: i32
+}
+
+impl GameItem {
+    pub fn new(resource: GameResource, amount: i32) -> GameItem {
+        GameItem { resource , amount }
+    }
 }
 
 #[derive(Default, Debug, Clone)]

@@ -1,16 +1,18 @@
 pub mod datatypes;
 pub mod step;
+pub mod hauler;
 
 use hecs::{World, Entity};
 use raylib::prelude::*;
 
 use crate::{
-    game_core::collision::{CollisionBox, TriggerCollision, BodyCollision}, 
-    game_core::constants::{TILE_SIZE, DEFAULT_IDLE_POINT}, 
-    game_core::{enums::CollisionType, datatypes::Sprite}
+    engine::collision::{CollisionBox, TriggerCollision, BodyCollision}, 
+    engine::{enums::CollisionType, datatypes::Sprite}
 };
 
-use self::datatypes::{Hauler, IdleState, Backpack, IdleInfo};
+use self::{datatypes::{IdleState, Backpack, IdleInfo}, hauler::Hauler};
+
+use super::constants::{TILE_SIZE, DEFAULT_IDLE_POINT};
 
 
 pub fn spawn_hauler(
@@ -23,6 +25,7 @@ pub fn spawn_hauler(
     let sprite = Sprite::new(
         position,
         atlas_tile,
+        TILE_SIZE
     );
     let rect = Rectangle {
         x: position.x,

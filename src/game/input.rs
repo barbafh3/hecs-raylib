@@ -3,18 +3,27 @@ use raylib::prelude::*;
 use raylib::consts::KeyboardKey::*;
 use raylib::consts::MouseButton::*;
 
-use crate::game_core::collision::{DrawCollisions, is_point_inside_box};
-use crate::game_core::constants::{CAMERA_SPEED, TILE_SIZE};
-use crate::game_core::enums::ButtonState;
-use crate::game_core::ui::CameraZoom;
-use crate::game_core::ui::ToggleButton;
-use crate::game_core::ui::{DebugUI, toggle_mouse_selection, Button};
+use crate::engine::{
+    collision::{DrawCollisions, is_point_inside_box},
+    enums::ButtonState,
+    ui::{
+        datatypes::{Button,
+            CameraZoom,
+            DebugUI,
+            ToggleButton,
+            UIElement
+        },
+        toggle_mouse_selection
+    },
+};
+
+use super::constants::{CAMERA_SPEED, TILE_SIZE};
 
 // FUNCTIONS ------
-pub fn game_input(
+pub fn handle_input(
     world: &mut World, 
     raylib_handle: &mut RaylibHandle, 
-    camera: &mut Camera2D
+    camera: &mut Camera2D,
 ) {
     camera.target = read_camera_input(raylib_handle, camera.target);
     check_debug_button_click(world, raylib_handle);
@@ -35,12 +44,12 @@ pub fn check_debug_button_click(world: &mut World, raylib_handle: &mut RaylibHan
     let mut functions: Vec<fn(&mut World) -> ()> = vec![];
     let mut handle_functions: Vec<fn(&mut World, &mut RaylibHandle) -> ()> = vec![];
     
-    let button_query = world.query_mut::<&mut Button>().without::<ToggleButton>();
-    button_query.into_iter().for_each(|(_, button)| {
+    let button_query = world.query_mut::<(&mut Button, &UIElement)>().without::<ToggleButton>();
+    button_query.into_iter().for_each(|(_, (button, element))| {
         let mouse_pos = raylib_handle.get_mouse_position();
         let button_box = Rectangle {
-            x: button.position.x,
-            y: button.position.y - (TILE_SIZE * zoom),
+            x: element.position.x,
+            y: element.position.y - (TILE_SIZE * zoom),
             width: TILE_SIZE * zoom,
             height: TILE_SIZE * zoom
         };
@@ -63,13 +72,13 @@ pub fn check_debug_button_click(world: &mut World, raylib_handle: &mut RaylibHan
         }
     });
 
-    let toggle_button_query = world.query_mut::<&mut ToggleButton>().without::<Button>();
+    let toggle_button_query = world.query_mut::<(&mut ToggleButton, &UIElement)>().without::<Button>();
 
-    toggle_button_query.into_iter().for_each(|(_, button)| {
+    toggle_button_query.into_iter().for_each(|(_, (button, element))| {
         let mouse_pos = raylib_handle.get_mouse_position();
         let button_box = Rectangle {
-            x: button.position.x,
-            y: button.position.y - (TILE_SIZE * zoom),
+            x: element.position.x,
+            y: element.position.y - (TILE_SIZE * zoom),
             width: TILE_SIZE * zoom,
             height: TILE_SIZE * zoom
         };

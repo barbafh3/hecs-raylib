@@ -1,26 +1,26 @@
-pub mod villagers;
-pub mod tilemap;
-pub mod tasks;
-pub mod buildings;
-pub mod game_core;
+pub mod game;
+pub mod engine;
 
 extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 
-use game_core::{draw::draw_game, step::update_game, constants::*, startup::world_setup};
-use once_cell::sync::OnceCell;
+use engine::{
+    ui::datatypes::CameraZoom, 
+    draw::engine_draw,
+    startup::world_setup
+};
+use game::{
+    constants::{SCREEN_WIDTH, SCREEN_HEIGHT, FONT_PATH, TILESET_PATH, UI_ATLAS_PATH}, 
+    input::handle_input, 
+    step::update_game, 
+    draw::draw_game, startup::game_setup, 
+};
 use hecs::World;
-use game_core::input::game_input;
 use raylib::{
     prelude::*, 
     math::Vector2,
 };
-use game_core::ui::CameraZoom;
-
-// GLOBAL TEXTURES
-pub static TILESET: OnceCell<Texture2D> = OnceCell::new();
-pub static UI_ATLAS: OnceCell<Texture2D> = OnceCell::new();
 
 fn main() -> Result<(), String>{
     pretty_env_logger::init();
@@ -33,9 +33,9 @@ fn main() -> Result<(), String>{
     let mut world = World::new();
 
     let font: Font;
-    match world_setup(&mut world, &mut raylib_handle, &thread) {
-        Err(err) => return Err(err),
+    match world_setup(&mut world, &mut raylib_handle, &thread, &FONT_PATH, &TILESET_PATH, &UI_ATLAS_PATH, Some(game_setup)) {
         Ok(f) => font = f,
+        Err(err) => return Err(err),
     }
 
     let zoom = 2.0;
@@ -51,11 +51,16 @@ fn main() -> Result<(), String>{
     raylib_handle.set_target_fps(60);
 
     while !raylib_handle.window_should_close() {
-        game_input(&mut world, &mut raylib_handle, &mut camera);
+        handle_input(&mut world, &mut raylib_handle, &mut camera);
         update_game(&mut world, &mut raylib_handle);
-
-        let mut draw_handle = raylib_handle.begin_drawing(&thread);
-        draw_game(&mut world, &mut draw_handle, &camera, &font);
+        engine_draw(
+            &mut world, 
+            &mut raylib_handle.begin_drawing(&thread), 
+            &camera, 
+            &font,
+            Some(draw_game),
+            None
+        );
     }
 
     Ok(())

@@ -3,8 +3,9 @@ use rand::Rng;
 use raylib::prelude::*;
 use raylib::texture::Texture2D;
 
-use crate::TILESET;
-use crate::game_core::constants::TILE_SIZE;
+use crate::engine::TILESET;
+
+use super::constants::TILE_SIZE;
 
 // TAGS ------
 pub struct Tileset;

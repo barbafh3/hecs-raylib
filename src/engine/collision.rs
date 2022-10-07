@@ -1,7 +1,7 @@
+use std::collections::HashMap;
+
 use hecs::{World, Entity};
 use raylib::prelude::*;
-
-use crate::game_core::constants::TILE_SIZE;
 
 // TAGS ------
 pub struct DrawCollisions;
@@ -9,11 +9,13 @@ pub struct DrawCollisions;
 // STRUCTS ------
 #[derive(Default)]
 pub struct BodyCollision {
-  pub colliding: bool
+  pub colliding: bool,
+  pub other_body: Option<Entity>
 }
 #[derive(Default)]
 pub struct TriggerCollision {
-  pub colliding: bool
+  pub colliding: bool,
+  pub other_trigger: Option<Entity>
 }
 pub struct CollisionBox {
   pub rect: Rectangle
@@ -39,7 +41,7 @@ pub fn are_boxes_colliding(box1: &Rectangle, box2: &Rectangle) -> bool {
 }
 
 pub fn detect_body_collisions(world: &mut World) {
-    let mut collided_entities: Vec<Entity> = vec![];
+    let mut collided_entities: HashMap<Entity, Entity> = HashMap::new();
 
     {
       let mut query = world.query::<&CollisionBox>().with::<BodyCollision>();
@@ -47,9 +49,8 @@ pub fn detect_body_collisions(world: &mut World) {
       for (ety1, box1) in query.into_iter() {
         for (ety2, box2) in query_2.into_iter() {
           if ety1 != ety2 && are_boxes_colliding(&box1.rect, &box2.rect) {
-            warn!("Body Collision!!");
-            collided_entities.push(ety1);
-            collided_entities.push(ety2);
+            collided_entities.insert(ety1, ety2);
+            collided_entities.insert(ety2, ety1);
           }
         }
       }
@@ -57,33 +58,45 @@ pub fn detect_body_collisions(world: &mut World) {
 
     let query = world.query_mut::<&mut BodyCollision>();
     for (ety, body_collision) in query.into_iter() {
-      body_collision.colliding = collided_entities.contains(&ety);
+      if collided_entities.contains_key(&ety) {
+        body_collision.colliding = true;
+        body_collision.other_body = Some(collided_entities[&ety]);
+      } else {
+        body_collision.colliding = false;
+        body_collision.other_body = None;
+      }
     }
 }
 
 pub fn detect_trigger_collisions(world: &mut World) {
-    let mut collided_entities: Vec<Entity> = vec![];
+    let mut collided_entities: HashMap<Entity, Entity> = HashMap::new();
 
     {
       let mut query = world.query::<&CollisionBox>().with::<TriggerCollision>();
       let mut query_2 = world.query::<&CollisionBox>().with::<TriggerCollision>();
-      for (ety1, box1) in query.into_iter() {
-        for (ety2, box2) in query_2.into_iter() {
+      query.into_iter().for_each(|(ety1, box1)| {
+        query_2.into_iter().for_each(|(ety2, box2)| {
           if ety1 != ety2 && are_boxes_colliding(&box1.rect, &box2.rect) {
-            collided_entities.push(ety1);
-            collided_entities.push(ety2);
+            collided_entities.insert(ety1, ety2);
+            collided_entities.insert(ety2, ety1);
           }
-        }
-      }
+        });
+      });
     }
 
     let query = world.query_mut::<&mut TriggerCollision>();
-    for (ety, trigger_collision) in query.into_iter() {
-      trigger_collision.colliding = collided_entities.contains(&ety);
-    }
+    query.into_iter().for_each(|(ety, trigger_collision)| {
+      if collided_entities.contains_key(&ety) {
+        trigger_collision.colliding = true;
+        trigger_collision.other_trigger = Some(collided_entities[&ety]);
+      } else {
+        trigger_collision.colliding = false;
+        trigger_collision.other_trigger = None;
+      }
+    });
 }
 
-pub fn draw_collisions(world: &mut World, draw_handle: &mut RaylibMode2D<RaylibDrawHandle>) {
+pub fn draw_collisions(world: &mut World, draw_handle: &mut RaylibMode2D<RaylibDrawHandle>, tile_size: f32) {
   let mut draw_query = world.query::<&DrawCollisions>();
   let draw_collisions_enabled: bool;
 
@@ -93,7 +106,8 @@ pub fn draw_collisions(world: &mut World, draw_handle: &mut RaylibMode2D<RaylibD
 
   if draw_collisions_enabled {
     let mut drawn_entities: Vec<Entity> = vec![];
-    for (ety, (col_body, col_box)) in &mut world.query::<(&BodyCollision, &CollisionBox)>() {
+    let query = &mut world.query::<(&BodyCollision, &CollisionBox)>();
+    query.into_iter().for_each(|(ety, (col_body, col_box))| {
       let selected_color: Color;
       if col_body.colliding {
           selected_color = Color { r: 230, g: 41, b: 55, a: 170 };
@@ -106,11 +120,12 @@ pub fn draw_collisions(world: &mut World, draw_handle: &mut RaylibMode2D<RaylibD
       draw_handle.draw_rectangle(
         col_box.rect.x as i32, 
         col_box.rect.y as i32, 
-        TILE_SIZE as i32, 
-        TILE_SIZE as i32, 
+        tile_size as i32, 
+        tile_size as i32, 
         selected_color);
-    }
-    for (ety, (col_trigger, col_box)) in &mut world.query::<(&TriggerCollision, &CollisionBox)>() {
+    });
+    let query = &mut world.query::<(&TriggerCollision, &CollisionBox)>();
+    query.into_iter().for_each(|(ety, (col_trigger, col_box))| {
       let mut selected_color: Color = Color::WHITE;
       selected_color.a = 0;
       if col_trigger.colliding {
@@ -124,9 +139,9 @@ pub fn draw_collisions(world: &mut World, draw_handle: &mut RaylibMode2D<RaylibD
       draw_handle.draw_rectangle(
         col_box.rect.x as i32, 
         col_box.rect.y as i32, 
-        TILE_SIZE as i32, 
-        TILE_SIZE as i32, 
+        tile_size as i32, 
+        tile_size as i32, 
         selected_color);
-    }
+    });
   }
 }

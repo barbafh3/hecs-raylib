@@ -1,4 +1,4 @@
-#[derive(Default, Debug, Clone, PartialEq)]
+#[derive(Default, Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum GameResource {
     #[default]
     Wood,
@@ -26,4 +26,16 @@ pub enum VillagerState {
     Loading,
     Carrying,
     Working
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum VillagerType {
+    Hauler,
+    Builder
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum BuildingType {
+    Warehouse,
+    House
 }
