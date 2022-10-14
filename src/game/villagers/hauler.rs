@@ -1,20 +1,82 @@
 use hecs::{World, Entity};
-use raylib::RaylibHandle;
+use raylib::prelude::*;
 
 use crate::{
-    game::{tasks::HaulTask, constants::HAULER_CAPACITY}, 
+    game::{
+        tasks::HaulTask, 
+        constants::{HAULER_CAPACITY, TILE_SIZE, DEFAULT_IDLE_POINT}
+    }, 
     engine::{
-        enums::VillagerState, datatypes::Sprite,
+        enums::{VillagerState, CollisionType}, 
+        datatypes::Sprite, 
+        collision::{CollisionBox, BodyCollision, TriggerCollision},
     }
 };
 
-use super::{datatypes::{GameItem, Backpack, LoadingState, CarryingState}, step::move_villager};
+use super::{
+    datatypes::{GameItem, Backpack, LoadingState, CarryingState, IdleInfo, IdleState, Hauler}, 
+    step::move_villager
+};
 
-pub struct Hauler;
+
+pub fn spawn_hauler(
+    world: &mut World, 
+    position: Vector2, 
+    atlas_tile: Vector2, 
+    collision_type: CollisionType,
+    opt_idle_point: Option<Vector2>
+) -> Entity {
+    let sprite = Sprite::new(
+        position,
+        atlas_tile,
+        TILE_SIZE
+    );
+    let rect = Rectangle {
+        x: position.x,
+        y: position.y,
+        width: TILE_SIZE,
+        height: TILE_SIZE
+    };
+    let idle_point: Vector2;
+
+    match opt_idle_point {
+        Some(point) => idle_point = point,
+        None => idle_point = DEFAULT_IDLE_POINT
+    }
+
+    let hauler: Entity = world.spawn((
+        Hauler, 
+        IdleInfo::default(idle_point),
+        IdleState,
+        Backpack::default(),
+        sprite, 
+        CollisionBox {
+            rect
+    }));
+
+    match collision_type {
+        CollisionType::Body => {
+            world.insert_one(hauler, BodyCollision::default()).unwrap();
+        },
+        CollisionType::Trigger => {
+            world.insert_one(hauler, TriggerCollision::new()).unwrap();
+        },
+        CollisionType::All => {
+            world.insert_one(
+                hauler, 
+                (
+                    BodyCollision::default(), 
+                    TriggerCollision::new()
+                )
+            ).unwrap();
+        }
+    }
+
+    return hauler;
+}
 
 
-pub fn update_loading_state(world: &mut World, raylib_handle: &mut RaylibHandle) {
-    let delta = raylib_handle.get_frame_time();
+pub fn update_loading_state(world: &mut World, delta: f32) {
     let origin_missing_haulers: Vec<Entity> = vec![];
 
     let query = world.query_mut::<(&HaulTask, &mut Sprite)>().with::<LoadingState>();
@@ -31,9 +93,7 @@ pub fn update_loading_state(world: &mut World, raylib_handle: &mut RaylibHandle)
     });
 }
 
-pub fn update_carrying_state(world: &mut World, raylib_handle: &mut RaylibHandle) {
-    let delta = raylib_handle.get_frame_time();
-
+pub fn update_carrying_state(world: &mut World, delta: f32) {
     {
         let query = world.query_mut::<(&mut HaulTask, &mut Sprite)>().with::<CarryingState>();
         query.into_iter().for_each(|(_, (task, sprite))| {

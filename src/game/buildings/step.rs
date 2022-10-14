@@ -1,23 +1,25 @@
 use std::collections::HashMap;
 
-use hecs::{World, Entity};
+use hecs::{Entity, World};
 use raylib::prelude::Vector2;
 
+use crate::engine::collision::TriggerCollision;
 use crate::{
     engine::{
-        collision::TriggerCollision, 
-        enums::{VillagerType, VillagerState, GameResource}, datatypes::Sprite
-    }, 
+        datatypes::Sprite,
+        enums::{GameResource, VillagerState, VillagerType},
+    },
     game::{
+        constants::HAULER_CAPACITY,
+        tasks::{generate_haul_task, HaulTask},
         villagers::{
-            datatypes::{IdleState, LoadingState, CarryingState, GameItem}, 
-            hauler::{deliver_resource, receive_resource}
-        }, 
-        tasks::{HaulTask, generate_haul_task}, constants::HAULER_CAPACITY
-    }
+            datatypes::{CarryingState, GameItem, IdleState, LoadingState},
+            hauler::{deliver_resource, receive_resource},
+        },
+    },
 };
 
-use super::{StorageSpace, Building, ConstructionStorage};
+use super::datatypes::{Building, ConstructionStorage, StorageSpace};
 
 pub fn update_buildings(world: &mut World) {
     generate_construction_haul_tasks(world);
@@ -29,7 +31,10 @@ pub fn check_construction_collided_with_entity(world: &mut World) {
     let mut collided_entities: HashMap<Entity, Entity> = HashMap::new();
 
     {
-        let mut query = world.query::<&TriggerCollision>().with::<Building>().with::<ConstructionStorage>();
+        let mut query = world
+            .query::<&TriggerCollision>()
+            .with::<Building>()
+            .with::<ConstructionStorage>();
         query.into_iter().for_each(|(ety, trigger_col)| {
             if trigger_col.colliding {
                 if let Some(other) = trigger_col.other_trigger {
@@ -39,31 +44,38 @@ pub fn check_construction_collided_with_entity(world: &mut World) {
         });
     }
 
-    collided_entities.into_iter().for_each(|(building, villager)| {
-        let mut m_villager_info: Option<(VillagerType, VillagerState)> = None;
+    collided_entities
+        .into_iter()
+        .for_each(|(building, villager)| {
+            let mut m_villager_info: Option<(VillagerType, VillagerState)> = None;
 
-        if let Ok(_) = world.get::<IdleState>(villager) {
-            m_villager_info = Some((VillagerType::Hauler, VillagerState::Idle));
-        } else if let Ok(_) = world.get::<LoadingState>(villager) {
-            m_villager_info = Some((VillagerType::Hauler, VillagerState::Loading));
-        } else if let Ok(_) = world.get::<CarryingState>(villager) {
-            m_villager_info = Some((VillagerType::Hauler, VillagerState::Carrying));
-        }
-
-        if let Some((villager_type, villager_state)) = m_villager_info {
-            match villager_type {
-                VillagerType::Hauler => construction_handle_hauler(world, building, villager, villager_state),
-                _ => {},
+            if let Ok(_) = world.get::<IdleState>(villager) {
+                m_villager_info = Some((VillagerType::Hauler, VillagerState::Idle));
+            } else if let Ok(_) = world.get::<LoadingState>(villager) {
+                m_villager_info = Some((VillagerType::Hauler, VillagerState::Loading));
+            } else if let Ok(_) = world.get::<CarryingState>(villager) {
+                m_villager_info = Some((VillagerType::Hauler, VillagerState::Carrying));
             }
-        }
-    });
+
+            if let Some((villager_type, villager_state)) = m_villager_info {
+                match villager_type {
+                    VillagerType::Hauler => {
+                        construction_handle_hauler(world, building, villager, villager_state)
+                    }
+                    _ => {}
+                }
+            }
+        });
 }
 
 pub fn check_storage_collided_with_entity(world: &mut World) {
     let mut collided_entities: HashMap<Entity, Entity> = HashMap::new();
 
     {
-        let mut query = world.query::<&TriggerCollision>().with::<Building>().without::<ConstructionStorage>();
+        let mut query = world
+            .query::<&TriggerCollision>()
+            .with::<Building>()
+            .without::<ConstructionStorage>();
         query.into_iter().for_each(|(ety, trigger_col)| {
             if trigger_col.colliding {
                 if let Some(other) = trigger_col.other_trigger {
@@ -73,27 +85,36 @@ pub fn check_storage_collided_with_entity(world: &mut World) {
         });
     }
 
-    collided_entities.into_iter().for_each(|(building, villager)| {
-        let mut m_villager_info: Option<(VillagerType, VillagerState)> = None;
+    collided_entities
+        .into_iter()
+        .for_each(|(building, villager)| {
+            let mut m_villager_info: Option<(VillagerType, VillagerState)> = None;
 
-        if let Ok(_) = world.get::<IdleState>(villager) {
-            m_villager_info = Some((VillagerType::Hauler, VillagerState::Idle));
-        } else if let Ok(_) = world.get::<LoadingState>(villager) {
-            m_villager_info = Some((VillagerType::Hauler, VillagerState::Loading));
-        } else if let Ok(_) = world.get::<CarryingState>(villager) {
-            m_villager_info = Some((VillagerType::Hauler, VillagerState::Carrying));
-        }
-
-        if let Some((villager_type, villager_state)) = m_villager_info {
-            match villager_type {
-                VillagerType::Hauler => storage_handle_hauler(world, building, villager, villager_state),
-                _ => {},
+            if let Ok(_) = world.get::<IdleState>(villager) {
+                m_villager_info = Some((VillagerType::Hauler, VillagerState::Idle));
+            } else if let Ok(_) = world.get::<LoadingState>(villager) {
+                m_villager_info = Some((VillagerType::Hauler, VillagerState::Loading));
+            } else if let Ok(_) = world.get::<CarryingState>(villager) {
+                m_villager_info = Some((VillagerType::Hauler, VillagerState::Carrying));
             }
-        }
-    });
+
+            if let Some((villager_type, villager_state)) = m_villager_info {
+                match villager_type {
+                    VillagerType::Hauler => {
+                        storage_handle_hauler(world, building, villager, villager_state)
+                    }
+                    _ => {}
+                }
+            }
+        });
 }
 
-pub fn construction_handle_hauler(world: &mut World, building: Entity, hauler: Entity, state: VillagerState) {
+pub fn construction_handle_hauler(
+    world: &mut World,
+    building: Entity,
+    hauler: Entity,
+    state: VillagerState,
+) {
     let mut building_position: Vector2 = Vector2::zero();
     let mut is_hauler_destination: bool = false;
     let mut construction_finished: bool = false;
@@ -130,12 +151,17 @@ pub fn construction_handle_hauler(world: &mut World, building: Entity, hauler: E
                     place_construction_resource(world, building, item);
                 }
             }
-        },
+        }
         _ => {}
     }
 }
 
-pub fn storage_handle_hauler(world: &mut World, building: Entity, hauler: Entity, state: VillagerState) {
+pub fn storage_handle_hauler(
+    world: &mut World,
+    building: Entity,
+    hauler: Entity,
+    state: VillagerState,
+) {
     let mut building_position: Vector2 = Vector2::zero();
     let mut is_hauler_origin: bool = false;
     let mut is_hauler_destination: bool = false;
@@ -165,7 +191,7 @@ pub fn storage_handle_hauler(world: &mut World, building: Entity, hauler: Entity
                     remove_from_storage(world, building, item);
                 }
             }
-        },
+        }
         VillagerState::Carrying => {
             if is_hauler_destination {
                 let m_item = deliver_resource(world, hauler);
@@ -173,50 +199,58 @@ pub fn storage_handle_hauler(world: &mut World, building: Entity, hauler: Entity
                     add_to_storage(world, building, item);
                 }
             }
-        },
+        }
         _ => {}
     }
 }
-
 
 pub fn generate_construction_haul_tasks(world: &mut World) {
     let mut task_data_list: Vec<(Vector2, HashMap<GameResource, i32>)> = vec![];
 
     {
         let query = world.query_mut::<(&mut ConstructionStorage, &Sprite)>();
-        query.into_iter().for_each(|(_, (mut construction, sprite))| {
-            if !construction.tasks_generated {
-                println!("Listing tasks to be generated");
-                task_data_list.push((sprite.position, construction.required_item_list.clone()));
-                construction.tasks_generated = true;
-            }
-        });
+        query
+            .into_iter()
+            .for_each(|(_, (mut construction, sprite))| {
+                if !construction.tasks_generated {
+                    println!("Listing tasks to be generated");
+                    task_data_list.push((sprite.position, construction.required_item_list.clone()));
+                    construction.tasks_generated = true;
+                }
+            });
     }
 
-    task_data_list.into_iter().for_each(|(destination, resource_list)| {
-        resource_list.into_iter().for_each(|(resource, amount)| {
-            let task_count: i32 = amount / HAULER_CAPACITY;
-            
-            for _ in 0..task_count {
-                let mut m_origin_pos: Option<Vector2> = None;
-                {
-                    let mut origin_query = world.query::<(&StorageSpace, &Sprite)>().without::<ConstructionStorage>();
-                    origin_query.into_iter().for_each(|(_, (storage, sprite))| {
-                        if storage_has_required_resource(&storage, resource, HAULER_CAPACITY) {
-                            m_origin_pos = Some(sprite.position);
-                        }
-                    });
-                }
+    task_data_list
+        .into_iter()
+        .for_each(|(destination, resource_list)| {
+            resource_list.into_iter().for_each(|(resource, amount)| {
+                let task_count: i32 = amount / HAULER_CAPACITY;
 
-                if let Some(origin_pos) = m_origin_pos {
-                    generate_haul_task(world, origin_pos, destination, resource);
+                for _ in 0..task_count {
+                    let mut m_origin_pos: Option<Vector2> = None;
+                    {
+                        let mut origin_query = world
+                            .query::<(&StorageSpace, &Sprite)>()
+                            .without::<ConstructionStorage>();
+                        origin_query.into_iter().for_each(|(_, (storage, sprite))| {
+                            if storage_has_required_resource(&storage, resource, HAULER_CAPACITY)
+                                && m_origin_pos.is_none()
+                            {
+                                m_origin_pos = Some(sprite.position);
+                            }
+                        });
+                    }
+                    generate_haul_task(world, m_origin_pos, destination, resource);
                 }
-            }
+            });
         });
-    });
 }
 
-pub fn storage_has_required_resource(storage: &StorageSpace, resource: GameResource, amount: i32) -> bool {
+pub fn storage_has_required_resource(
+    storage: &StorageSpace,
+    resource: GameResource,
+    amount: i32,
+) -> bool {
     if storage.item_list.contains_key(&resource) {
         if storage.reserved_item_list.contains_key(&resource) {
             return storage.item_list[&resource] - storage.reserved_item_list[&resource] >= amount;
@@ -228,7 +262,7 @@ pub fn storage_has_required_resource(storage: &StorageSpace, resource: GameResou
     }
 }
 
-pub fn remove_from_storage(world: &mut World, building: Entity, item: GameItem) -> bool{
+pub fn remove_from_storage(world: &mut World, building: Entity, item: GameItem) -> bool {
     let result = world.get_mut::<&mut StorageSpace>(building);
     if let Ok(mut storage) = result {
         if storage.item_list.contains_key(&item.resource) {

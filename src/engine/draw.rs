@@ -1,8 +1,8 @@
 use hecs::World;
-use raylib::ffi::Font;
+// use raylib::ffi::Font;
 use raylib::prelude::*;
 
-use super::{datatypes::Sprite, TILESET};
+use super::{datatypes::Sprite, TILESET, ui::draw::draw_ui};
 
 /// Engine function that draws core components to the screen. It receives the world and
 /// raylib core rendering components.
@@ -13,6 +13,7 @@ pub fn engine_draw(
     draw_handle: &mut RaylibDrawHandle, 
     camera: &Camera2D, 
     font: &Font,
+    tile_size: f32,
     m_draw_game_func: Option<fn(&mut World, &mut RaylibMode2D<RaylibDrawHandle>, &Camera2D) -> ()>,
     m_draw_ui_func: Option<fn(&mut World, &mut RaylibDrawHandle, &Camera2D, &Font) -> ()>
 ) {
@@ -25,6 +26,7 @@ pub fn engine_draw(
         }
     }
 
+    draw_ui(world, draw_handle, font, tile_size);
     if let Some(draw_ui_func) = m_draw_ui_func {
         (draw_ui_func)(world, draw_handle, camera, font);
     }

@@ -3,6 +3,7 @@ use raylib::prelude::*;
 use raylib::consts::KeyboardKey::*;
 use raylib::consts::MouseButton::*;
 
+use crate::engine::collision::CollisionBox;
 use crate::engine::{
     collision::{DrawCollisions, is_point_inside_box},
     enums::ButtonState,
@@ -17,16 +18,18 @@ use crate::engine::{
     },
 };
 
+use super::buildings::datatypes::ConstructionPlacement;
 use super::constants::{CAMERA_SPEED, TILE_SIZE};
 
 // FUNCTIONS ------
 pub fn handle_input(
     world: &mut World, 
     raylib_handle: &mut RaylibHandle, 
-    camera: &mut Camera2D,
+    camera: &mut Camera2D
 ) {
     camera.target = read_camera_input(raylib_handle, camera.target);
     check_debug_button_click(world, raylib_handle);
+    update_construction_hover(world, raylib_handle, camera);
 
     if raylib_handle.is_key_released(KEY_F10) {
         toggle_mouse_selection(world);
@@ -159,4 +162,26 @@ pub fn toggle_draw_collisions(world: &mut World) {
             world.despawn(entity).unwrap();
         }
     }
+}
+
+
+pub fn update_construction_hover(world: &mut World, raylib_handle: &mut RaylibHandle, camera: &Camera2D) {
+    let mut query = world.query::<(&mut ConstructionPlacement, &mut CollisionBox)>();
+    query.into_iter().for_each(|(_, (placement, col_box))| {
+        let mouse_pos = raylib_handle.get_screen_to_world2D(raylib_handle.get_mouse_position(), camera);
+        let mut current_tile_x = (mouse_pos.x / TILE_SIZE) as i32;
+        let mut current_tile_y = (mouse_pos.y / TILE_SIZE) as i32;
+
+        if mouse_pos.x < 0.0 {
+            current_tile_x -= 1;
+        }
+        if mouse_pos.y < 0.0 {
+            current_tile_y -= 1;
+        }
+
+        placement.position.x = current_tile_x as f32 * TILE_SIZE;
+        placement.position.y = current_tile_y as f32 * TILE_SIZE;
+        col_box.rect.x = placement.position.x;
+        col_box.rect.y = placement.position.y;
+    });
 }

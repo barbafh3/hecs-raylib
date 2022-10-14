@@ -11,7 +11,7 @@ use engine::{
     startup::world_setup
 };
 use game::{
-    constants::{SCREEN_WIDTH, SCREEN_HEIGHT, FONT_PATH, TILESET_PATH, UI_ATLAS_PATH}, 
+    constants::{SCREEN_WIDTH, SCREEN_HEIGHT, FONT_PATH, TILESET_PATH, UI_ATLAS_PATH, TILE_SIZE}, 
     input::handle_input, 
     step::update_game, 
     draw::draw_game, startup::game_setup, 
@@ -52,12 +52,13 @@ fn main() -> Result<(), String>{
 
     while !raylib_handle.window_should_close() {
         handle_input(&mut world, &mut raylib_handle, &mut camera);
-        update_game(&mut world, &mut raylib_handle);
+        update_game(&mut world, &mut raylib_handle, &font);
         engine_draw(
             &mut world, 
             &mut raylib_handle.begin_drawing(&thread), 
             &camera, 
             &font,
+            TILE_SIZE,
             Some(draw_game),
             None
         );

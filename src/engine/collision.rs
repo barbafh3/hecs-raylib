@@ -12,11 +12,18 @@ pub struct BodyCollision {
   pub colliding: bool,
   pub other_body: Option<Entity>
 }
-#[derive(Default)]
+
 pub struct TriggerCollision {
   pub colliding: bool,
-  pub other_trigger: Option<Entity>
+  pub other_trigger: Option<Entity>,
 }
+
+impl TriggerCollision {
+  pub fn new() -> TriggerCollision {
+    TriggerCollision { colliding: false, other_trigger: None }
+  }
+}
+
 pub struct CollisionBox {
   pub rect: Rectangle
 }

@@ -1,20 +1,19 @@
 use hecs::World;
 use rand::Rng;
-use raylib::{RaylibHandle, prelude::*};
+use raylib::prelude::*;
 
 use crate::engine::{collision::CollisionBox, datatypes::Sprite};
 
 use super::{hauler::{update_loading_state, update_carrying_state}, datatypes::{IdleInfo, IdleState}};
 
-pub fn update_villagers(world: &mut World, raylib_handle: &mut RaylibHandle) {
+pub fn update_villagers(world: &mut World, delta: f32) {
     update_collision_box_position(world);
-    update_idle_state(world, raylib_handle);
-    update_loading_state(world, raylib_handle);
-    update_carrying_state(world, raylib_handle);
+    update_idle_state(world, delta);
+    update_loading_state(world, delta);
+    update_carrying_state(world, delta);
 }
 
-pub fn update_idle_state(world: &mut World, raylib_handle: &mut RaylibHandle) {
-    let delta = raylib_handle.get_frame_time();
+pub fn update_idle_state(world: &mut World, delta: f32) {
 
     let idle_query = world.query_mut::<(&mut IdleInfo, &mut Sprite)>().with::<IdleState>();
     idle_query.into_iter().for_each(|(_, (idle_state, sprite))| {

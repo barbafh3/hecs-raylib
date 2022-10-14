@@ -1,4 +1,4 @@
-use raylib::prelude::Vector2;
+use raylib::prelude::{Vector2, Rectangle};
 
 pub const SCREEN_WIDTH: i32 = 1280;
 pub const SCREEN_WIDTH_F: f32 = 1280.0;
@@ -18,3 +18,10 @@ pub const DEFAULT_IDLE_POINT_ATLAS_TILE: Vector2 = Vector2 { x: 2.0, y: 6.0 };
 pub const PLAYER_SPEED: f32 = 2.0;
 
 pub const HAULER_CAPACITY: i32 = 10;
+
+pub const CONSTRUCTION_RECT: Rectangle = Rectangle { 
+    x: 0.0 * TILE_SIZE, 
+    y: 5.0 * TILE_SIZE, 
+    width: TILE_SIZE, 
+    height: TILE_SIZE 
+};

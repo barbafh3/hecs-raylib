@@ -1,4 +1,4 @@
-use hecs::{Entity, World};
+use hecs::World;
 use raylib::prelude::*;
 
 use crate::engine::enums::ButtonState;
@@ -10,10 +10,6 @@ pub struct UIAtlas;
 pub struct CameraZoom(pub(crate) f32);
 
 // STRUCTS ------
-pub struct SelectedHauler {
-    pub hauler: Entity
-}
-
 pub struct Fonts {
     pub base_font: Font
 }

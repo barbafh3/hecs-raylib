@@ -4,6 +4,7 @@ use raylib::prelude::*;
 use crate::engine::enums::*;
 
 // TAGS ------
+pub struct Hauler;
 pub struct WorkingState;
 
 // STRUCTS ------

@@ -12,22 +12,16 @@ pub fn world_setup<'a>(
     ui_atlas_path: &str,
     m_game_setup: Option<fn(&mut World, &mut RaylibHandle, thread: &RaylibThread) -> ()>
 ) -> Result<Font, String> {
-    if let Err(err) = load_tileset(raylib_handle, thread, tileset_path, ui_atlas_path) {
-        return Err(err)
-    }
+    load_tileset(raylib_handle, thread, tileset_path, ui_atlas_path)?;
 
     if let Some(game_setup) = m_game_setup { 
         (game_setup)(world, raylib_handle, thread);
     }
 
     return raylib_handle.load_font(thread, &font_path);
-    // match raylib_handle.load_font(thread, &font_path) {
-    //     Ok(f) => return Ok(&f),
-    //     Err(err) => return Err(err)
-    // }
 }
 
-pub fn load_tileset(
+fn load_tileset(
     raylib_handle: &mut RaylibHandle, 
     thread: &RaylibThread, 
     tileset_path: &str, 
