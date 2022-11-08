@@ -45,6 +45,8 @@ pub fn spawn_finished_house(world: &mut World, position: Vector2) -> Entity {
 }
 
 pub fn spawn_house_placement(world: &mut World, position: Vector2) -> Entity {
+    let sprite = Sprite::new(position, Vector2 { x: 2.0, y: 1.0 }, TILE_SIZE);
+
     let placement = ConstructionPlacement {
         position,
         building_rect: Rectangle {
@@ -72,6 +74,7 @@ pub fn spawn_house_placement(world: &mut World, position: Vector2) -> Entity {
         Building,
         House,
         placement,
+        sprite,
         construction,
         col_box,
         TriggerCollision::new(),

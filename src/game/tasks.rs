@@ -35,9 +35,11 @@ pub struct HaulTask {
 }
 
 // FUNCTION ------
-pub fn update_tasks(world: &mut World) {
-    find_idle_hauler_for_task(world);
+pub fn update_tasks(world: &mut World) -> Result<(), String> {
+    find_idle_hauler_for_task(world)?;
     find_storage_source_for_haul_task(world);
+
+    Ok(())
 }
 
 pub fn give_haul_task_to_idle(world: &mut World) {
@@ -63,7 +65,7 @@ pub fn generate_haul_task(
     query.into_iter().for_each(|(_, open_tasks)| {
         let haul_task = HaulTask {
             id: get_id(),
-            origin_position: origin_position,
+            origin_position,
             destination_position: Some(destination_position),
             resource,
         };
@@ -71,7 +73,7 @@ pub fn generate_haul_task(
     });
 }
 
-pub fn find_idle_hauler_for_task(world: &mut World) {
+pub fn find_idle_hauler_for_task(world: &mut World) -> Result<(), String> {
     let mut m_selected_hauler: Option<Entity> = None;
     let mut m_haul_task: Option<HaulTask> = None;
 
@@ -102,11 +104,13 @@ pub fn find_idle_hauler_for_task(world: &mut World) {
 
         if let Some(haul_task) = m_haul_task {
             if haul_task.origin_position.is_some() && haul_task.destination_position.is_some() {
-                world.insert(hauler, (haul_task,)).unwrap();
+                world.insert(hauler, (haul_task,)).map_err(|_| "No such entity")?;
                 IdleState::change_state_to(world, hauler, VillagerState::Loading);
             }
         }
     }
+
+    Ok(())
 }
 
 pub fn find_storage_source_for_haul_task(world: &mut World) {

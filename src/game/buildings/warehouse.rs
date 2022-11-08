@@ -15,13 +15,9 @@ use crate::{
 use super::datatypes::{StorageSpace, Building, Warehouse, Storage};
 
 
-pub fn spawn_finished_warehouse(world: &mut World, position: Vector2, empty: bool) -> Entity {
-    let mut storage: HashMap<GameResource, i32> = HashMap::new();
-    if !empty {
-        storage.insert(GameResource::Wood, 150); 
-    }
+pub fn spawn_finished_warehouse(world: &mut World, position: Vector2, starting_storage: HashMap<GameResource, i32>) -> Entity {
     let storage_space: StorageSpace = StorageSpace { 
-        item_list: storage, 
+        item_list: starting_storage, 
         reserved_item_list: HashMap::new() 
     };
     let sprite = Sprite::new(

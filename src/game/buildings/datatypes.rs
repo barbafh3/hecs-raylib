@@ -13,15 +13,19 @@ pub struct Storage;
 // STRUCTS ------
 pub struct ConstructionPlacement {
     pub position: Vector2,
-    pub building_rect: Rectangle
+    pub building_rect: Rectangle,
 }
 
 pub struct StorageSpace {
     pub item_list: HashMap<GameResource, i32>,
-    pub reserved_item_list: HashMap<GameResource, i32>
+    pub reserved_item_list: HashMap<GameResource, i32>,
 }
 
 pub struct ConstructionStorage {
     pub tasks_generated: bool,
     pub required_item_list: HashMap<GameResource, i32>,
+}
+
+pub struct OngoingConstruction {
+    pub work_required: f32,
 }

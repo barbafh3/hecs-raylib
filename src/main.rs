@@ -32,11 +32,15 @@ fn main() -> Result<(), String>{
 
     let mut world = World::new();
 
-    let font: Font;
-    match world_setup(&mut world, &mut raylib_handle, &thread, &FONT_PATH, &TILESET_PATH, &UI_ATLAS_PATH, Some(game_setup)) {
-        Ok(f) => font = f,
-        Err(err) => return Err(err),
-    }
+    let font: Font = world_setup(
+        &mut world, 
+        &mut raylib_handle, 
+        &thread, 
+        &FONT_PATH, 
+        &TILESET_PATH, 
+        &UI_ATLAS_PATH, 
+        Some(game_setup)
+        )?; 
 
     let zoom = 2.0;
 
@@ -48,11 +52,11 @@ fn main() -> Result<(), String>{
     };
     world.spawn((CameraZoom(zoom),));
 
-    raylib_handle.set_target_fps(60);
+    raylib_handle.set_target_fps(75);
 
     while !raylib_handle.window_should_close() {
-        handle_input(&mut world, &mut raylib_handle, &mut camera);
-        update_game(&mut world, &mut raylib_handle, &font);
+        handle_input(&mut world, &mut raylib_handle, &mut camera)?;
+        update_game(&mut world, &mut raylib_handle, &font)?;
         engine_draw(
             &mut world, 
             &mut raylib_handle.begin_drawing(&thread), 

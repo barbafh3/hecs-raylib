@@ -31,16 +31,16 @@ pub struct Label {
 pub struct Button {
     pub rect: Rectangle,
     pub state: ButtonState,
-    pub action: Option<fn(&mut World) -> ()>,
-    pub handle_action: Option<fn(&mut World, &mut RaylibHandle) -> ()>,
+    pub action: Option<fn(&mut World) -> Result<(), String>>,
+    pub handle_action: Option<fn(&mut World, &mut RaylibHandle) -> Result<(), String>>,
 }
 
 impl Button {
     pub fn new(
         atlas_tile: Vector2, 
         tile_size: f32,
-        action: Option<fn(&mut World) -> ()>,
-        handle_action: Option<fn(&mut World, &mut RaylibHandle) -> ()>,
+        action: Option<fn(&mut World) -> Result<(), String>>,
+        handle_action: Option<fn(&mut World, &mut RaylibHandle) -> Result<(), String>>,
     ) -> Button {
         Button {
             state: ButtonState::Normal,
@@ -59,16 +59,16 @@ impl Button {
 pub struct ToggleButton {
     pub rect: Rectangle,
     pub state: ButtonState,
-    pub action: Option<fn(&mut World) -> ()>,
-    pub handle_action: Option<fn(&mut World, &mut RaylibHandle) -> ()>,
+    pub action: Option<fn(&mut World) -> Result<(), String>>,
+    pub handle_action: Option<fn(&mut World, &mut RaylibHandle) -> Result<(), String>>,
 }
 
 impl ToggleButton {
     pub fn new(
         atlas_tile: Vector2, 
         tile_size: f32,
-        action: Option<fn(&mut World) -> ()>,
-        handle_action: Option<fn(&mut World, &mut RaylibHandle) -> ()>,
+        action: Option<fn(&mut World) -> Result<(), String>>,
+        handle_action: Option<fn(&mut World, &mut RaylibHandle) -> Result<(), String>>,
     ) -> ToggleButton {
         ToggleButton {
             state: ButtonState::Normal,

@@ -13,14 +13,16 @@ use crate::{
 use super::ui::step::update_ui;
 
 
-pub fn update_game(world: &mut World, raylib_handle: &mut RaylibHandle, font: &Font) {
+pub fn update_game(world: &mut World, raylib_handle: &mut RaylibHandle, font: &Font) -> Result<(), String> {
     let delta = raylib_handle.get_frame_time();
 
-    update_tasks(world);
+    update_tasks(world)?;
     update_villagers(world, delta);
-    update_buildings(world);
+    update_buildings(world)?;
     detect_body_collisions(world);
     detect_trigger_collisions(world);
 
-    update_ui(world, font);
+    update_ui(world, font)?;
+
+    Ok(())
 }

@@ -17,8 +17,8 @@ pub fn spawn_button(
     layer: i32,
     atlas_tile: Vector2, 
     tile_size: f32,
-    action: Option<fn(&mut World) -> ()>,
-    handle_action: Option<fn(&mut World, &mut RaylibHandle) -> ()>,
+    action: Option<fn(&mut World) -> Result<(), String>>,
+    handle_action: Option<fn(&mut World, &mut RaylibHandle) -> Result<(), String>>,
 ) -> Entity {
     let ui_element = UIElement {
         position,
@@ -43,8 +43,8 @@ pub fn spawn_toggle_button(
     layer: i32,
     atlas_tile: Vector2, 
     tile_size: f32,
-    basic_action: Option<fn(&mut World) -> ()>,
-    handle_action: Option<fn(&mut World, &mut RaylibHandle) -> ()>,
+    basic_action: Option<fn(&mut World) -> Result<(), String>>,
+    handle_action: Option<fn(&mut World, &mut RaylibHandle) -> Result<(), String>>,
 ) -> Entity {
     let ui_element = UIElement {
         position,
@@ -87,7 +87,7 @@ pub fn spawn_label(
     return world.spawn((label, ui_element));
 }
 
-pub fn toggle_mouse_selection(world: &mut World) {
+pub fn toggle_mouse_selection(world: &mut World) -> Result<(), String> {
     let mut entity_list: Vec<Entity> = vec![];
     {
         let mut selection_query = world.query::<&MouseSelection>();
@@ -101,9 +101,11 @@ pub fn toggle_mouse_selection(world: &mut World) {
         world.spawn((MouseSelection,));
     } else {
         for entity in entity_list {
-            world.despawn(entity).unwrap();
+            world.despawn(entity).map_err(|_| "No such entity")?;
         }
     }
+
+    Ok(())
 }
 
 pub fn toggle_debug_ui(world: &mut World) {

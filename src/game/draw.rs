@@ -3,20 +3,20 @@ use raylib::prelude::*;
 
 use crate::engine::{
     collision::{draw_collisions, TriggerCollision},
-    draw::draw_sprites,
+    datatypes::Sprite,
     enums::VillagerState,
     ui::draw::draw_mouse_selection,
     TILESET,
 };
 
 use super::{
-    buildings::datatypes::ConstructionPlacement,
+    buildings::datatypes::{ConstructionPlacement, ConstructionStorage, OngoingConstruction},
     constants::{CONSTRUCTION_RECT, SCREEN_WIDTH_F, TILE_SIZE},
-    tilemap::draw_tilemap,
     ui::datatypes::SelectedHauler,
     villagers::datatypes::{
         Backpack, CarryingState, GameItem, IdleState, LoadingState, WorkingState,
-    },
+    }, 
+    tilemap::{draw_tilemap, check_visible_tilemap_chunks},
 };
 
 pub fn draw_game(
@@ -24,9 +24,11 @@ pub fn draw_game(
     mode2d: &mut RaylibMode2D<RaylibDrawHandle>,
     camera: &Camera2D,
 ) {
+    check_visible_tilemap_chunks(world, mode2d, camera);
     draw_tilemap(world, mode2d);
     draw_sprites(world, mode2d);
     draw_construction_placement(world, mode2d);
+    draw_construction(world, mode2d);
     draw_collisions(world, mode2d, TILE_SIZE);
     draw_mouse_selection(world, mode2d, &camera, TILE_SIZE);
 }
@@ -107,19 +109,67 @@ pub fn draw_selected_hauler_state(
 }
 
 pub fn draw_construction_placement(world: &mut World, mode2d: &mut RaylibMode2D<RaylibDrawHandle>) {
-    let mut query = world.query::<(&ConstructionPlacement, &TriggerCollision)>();
-    query.into_iter().for_each(|(_, (placement, trigger))| {
+    let mut query = world
+        .query::<(&TriggerCollision, &Sprite)>()
+        .with::<ConstructionStorage>()
+        .with::<ConstructionPlacement>();
+    query.into_iter().for_each(|(_, (trigger, sprite))| {
         let mut color = if trigger.colliding {
             Color::RED
         } else {
             Color::GREEN
         };
         color.a = 170;
+
         mode2d.draw_texture_rec(
             TILESET.get().unwrap(),
             CONSTRUCTION_RECT,
-            placement.position,
+            sprite.position,
             color,
+        );
+    });
+}
+
+pub fn draw_construction(world: &mut World, mode2d: &mut RaylibMode2D<RaylibDrawHandle>) {
+    let mut query = world
+        .query::<&Sprite>()
+        .with::<ConstructionStorage>()
+        .without::<ConstructionPlacement>();
+    query.into_iter().for_each(|(_, sprite)| {
+        mode2d.draw_texture_rec(
+            TILESET.get().unwrap(),
+            CONSTRUCTION_RECT,
+            sprite.position,
+            Color::WHITE,
+        );
+    });
+
+    let mut query = world
+        .query::<&Sprite>()
+        .with::<OngoingConstruction>()
+        .without::<ConstructionStorage>()
+        .without::<ConstructionPlacement>();
+    query.into_iter().for_each(|(_, sprite)| {
+        mode2d.draw_texture_rec(
+            TILESET.get().unwrap(),
+            CONSTRUCTION_RECT,
+            sprite.position,
+            Color::WHITE,
+        );
+    });
+}
+
+pub fn draw_sprites(world: &mut World, mode2d: &mut RaylibMode2D<RaylibDrawHandle>) {
+    let mut query = world
+        .query::<&Sprite>()
+        .without::<ConstructionStorage>()
+        .without::<OngoingConstruction>();
+    query.into_iter().for_each(|(_, sprite)| {
+        mode2d.draw_texture_rec(
+            TILESET.get().unwrap(),
+            sprite.rect,
+            sprite.position,
+            Color::WHITE,
         );
     });
 }

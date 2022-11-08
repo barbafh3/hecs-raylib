@@ -10,12 +10,12 @@ pub fn world_setup<'a>(
     font_path: &str,
     tileset_path: &str,
     ui_atlas_path: &str,
-    m_game_setup: Option<fn(&mut World, &mut RaylibHandle, thread: &RaylibThread) -> ()>
+    m_game_setup: Option<fn(&mut World, &mut RaylibHandle, thread: &RaylibThread) -> Result<(), String>>
 ) -> Result<Font, String> {
     load_tileset(raylib_handle, thread, tileset_path, ui_atlas_path)?;
 
     if let Some(game_setup) = m_game_setup { 
-        (game_setup)(world, raylib_handle, thread);
+        (game_setup)(world, raylib_handle, thread)?;
     }
 
     return raylib_handle.load_font(thread, &font_path);

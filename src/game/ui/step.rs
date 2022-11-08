@@ -21,14 +21,16 @@ use super::datatypes::{
     ActiveTaskCountLabel, GlobalStorage, GlobalStorageLabel, IdleTaskCountLabel,
 };
 
-pub fn update_ui(world: &mut World, font: &Font) {
-    update_active_haul_task_count(world, font);
-    update_idle_haul_task_count(world, font);
-    update_global_storage(world, font);
+pub fn update_ui(world: &mut World, font: &Font) -> Result<(), String> {
+    update_active_haul_task_count(world, font)?;
+    update_idle_haul_task_count(world, font)?;
+    update_global_storage(world, font)?;
+
+    Ok(())
 }
 
 // FUNCTIONS
-pub fn update_global_storage(world: &mut World, font: &Font) {
+pub fn update_global_storage(world: &mut World, font: &Font) -> Result<(), String>{
     let mut current_storage: HashMap<GameResource, i32> = HashMap::new();
     {
         let mut query = world.query::<&StorageSpace>();
@@ -67,23 +69,26 @@ pub fn update_global_storage(world: &mut World, font: &Font) {
         });
     }
 
-    labels_to_update.into_iter().for_each(|entity| {
+    for entity in labels_to_update.into_iter() {
         let mut _half_text_size: Vector2 = Vector2::zero();
         let text = format!("{:?}", current_storage);
         {
-            let mut label = world.get_mut::<Label>(entity).unwrap();
+            let mut label = world.get_mut::<Label>(entity).map_err(|_| "Component error")?;
             _half_text_size =
                 measure_text_ex(font, &text, label.font_size.clone(), label.spacing.clone()) / 2.0;
             label.text = text;
         }
         {
-            let mut element = world.get_mut::<UIElement>(entity).unwrap();
-            element.offset.x = -_half_text_size.x;
+            if let Ok(mut element) = world.get_mut::<UIElement>(entity) {
+                element.offset.x = -_half_text_size.x;
+            }
         }
-    });
+    };
+
+    Ok(())
 }
 
-pub fn update_idle_haul_task_count(world: &mut World, font: &Font) {
+pub fn update_idle_haul_task_count(world: &mut World, font: &Font) -> Result<(), String>{
     let mut labels_to_update: Vec<Entity> = vec![];
 
     {
@@ -97,7 +102,7 @@ pub fn update_idle_haul_task_count(world: &mut World, font: &Font) {
         });
     }
 
-    labels_to_update.into_iter().for_each(|entity| {
+    for entity in labels_to_update.into_iter() {
         let mut _haul_count: usize = 0;
         {
             let mut query = world.query::<&OpenTasks>();
@@ -108,19 +113,21 @@ pub fn update_idle_haul_task_count(world: &mut World, font: &Font) {
         let mut _half_text_size: Vector2 = Vector2::zero();
         let text = format!("Haul tasks awaiting hauler: {:?}", _haul_count);
         {
-            let mut label = world.get_mut::<Label>(entity).unwrap();
+            let mut label = world.get_mut::<Label>(entity).map_err(|_| "Component error")?;
             _half_text_size =
                 measure_text_ex(font, &text, label.font_size.clone(), label.spacing.clone());
             label.text = text;
         }
         {
-            let mut element = world.get_mut::<UIElement>(entity).unwrap();
+            let mut element = world.get_mut::<UIElement>(entity).map_err(|_| "Component error")?;
             element.offset.x = -_half_text_size.x;
         }
-    });
+    };
+
+    Ok(())
 }
 
-pub fn update_active_haul_task_count(world: &mut World, font: &Font) {
+pub fn update_active_haul_task_count(world: &mut World, font: &Font) -> Result<(), String> {
     let mut labels_to_update: Vec<Entity> = vec![];
 
     {
@@ -134,7 +141,7 @@ pub fn update_active_haul_task_count(world: &mut World, font: &Font) {
         });
     }
 
-    labels_to_update.into_iter().for_each(|entity| {
+    for entity in labels_to_update.into_iter() {
         let mut _haul_count: usize = 0;
         {
             let mut query = world.query::<&HaulTask>();
@@ -143,14 +150,16 @@ pub fn update_active_haul_task_count(world: &mut World, font: &Font) {
         let mut _half_text_size: Vector2 = Vector2::zero();
         let text = format!("Haul tasks running: {:?}", _haul_count);
         {
-            let mut label = world.get_mut::<Label>(entity).unwrap();
+            let mut label = world.get_mut::<Label>(entity).map_err(|_| "Component error")?;
             _half_text_size =
                 measure_text_ex(font, &text, label.font_size.clone(), label.spacing.clone());
             label.text = text;
         }
         {
-            let mut element = world.get_mut::<UIElement>(entity).unwrap();
+            let mut element = world.get_mut::<UIElement>(entity).map_err(|_| "Component error")?;
             element.offset.x = -_half_text_size.x;
         }
-    });
+    };
+
+    Ok(())
 }

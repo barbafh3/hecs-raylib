@@ -35,7 +35,6 @@ pub fn draw_ui_buttons(
     query.into_iter().for_each(|(_, (button, element))| {
         if element.layer == layer && element.visible {
             let mut src = button.rect.clone();
-            println!("Button atlas coord: {:?}", src);
             match button.state {
                 ButtonState::Hovered => {
                     src.x = src.x + 16.0;

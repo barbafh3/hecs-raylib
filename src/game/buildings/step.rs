@@ -1,9 +1,12 @@
+use raylib::consts::MouseButton::*;
 use std::collections::HashMap;
 
 use hecs::{Entity, World};
-use raylib::prelude::Vector2;
+use raylib::prelude::{Camera2D, Vector2};
+use raylib::RaylibHandle;
 
-use crate::engine::collision::TriggerCollision;
+use crate::engine::collision::{CollisionBox, TriggerCollision};
+use crate::game::constants::TILE_SIZE;
 use crate::{
     engine::{
         datatypes::Sprite,
@@ -19,12 +22,17 @@ use crate::{
     },
 };
 
-use super::datatypes::{Building, ConstructionStorage, StorageSpace};
+use super::datatypes::{
+    Building, ConstructionPlacement, ConstructionStorage, OngoingConstruction, StorageSpace,
+};
 
-pub fn update_buildings(world: &mut World) {
+pub fn update_buildings(world: &mut World) -> Result<(), String> {
     generate_construction_haul_tasks(world);
     check_storage_collided_with_entity(world);
     check_construction_collided_with_entity(world);
+    check_construction_resources(world)?;
+
+    Ok(())
 }
 
 pub fn check_construction_collided_with_entity(world: &mut World) {
@@ -122,7 +130,7 @@ pub fn construction_handle_hauler(
     {
         let result = world.get::<ConstructionStorage>(building);
         if let Ok(storage) = result {
-            construction_finished = is_construction_storage_empty(&storage.required_item_list);
+            construction_finished = is_storage_empty(&storage.required_item_list);
         }
     }
 
@@ -208,12 +216,14 @@ pub fn generate_construction_haul_tasks(world: &mut World) {
     let mut task_data_list: Vec<(Vector2, HashMap<GameResource, i32>)> = vec![];
 
     {
-        let query = world.query_mut::<(&mut ConstructionStorage, &Sprite)>();
+        let query = world
+            .query_mut::<(&mut ConstructionStorage, &Sprite)>()
+            .without::<ConstructionPlacement>();
         query
             .into_iter()
-            .for_each(|(_, (mut construction, sprite))| {
+            .for_each(|(entity, (mut construction, sprite))| {
                 if !construction.tasks_generated {
-                    println!("Listing tasks to be generated");
+                    println!("Listing tasks to be generated for {:?}", entity);
                     task_data_list.push((sprite.position, construction.required_item_list.clone()));
                     construction.tasks_generated = true;
                 }
@@ -263,14 +273,14 @@ pub fn storage_has_required_resource(
 }
 
 pub fn remove_from_storage(world: &mut World, building: Entity, item: GameItem) -> bool {
-    let result = world.get_mut::<&mut StorageSpace>(building);
+    let result = world.get_mut::<StorageSpace>(building);
     if let Ok(mut storage) = result {
+        println!("Storage got");
         if storage.item_list.contains_key(&item.resource) {
+            println!("Giving resource to hauler");
             *storage.item_list.get_mut(&item.resource).unwrap() -= item.amount;
-        } else {
-            storage.item_list.insert(item.resource, item.amount);
+            return true;
         }
-        return true;
     }
 
     return false;
@@ -299,8 +309,90 @@ pub fn place_construction_resource(world: &mut World, building: Entity, item: Ga
     }
 }
 
-pub fn is_construction_storage_empty(list: &HashMap<GameResource, i32>) -> bool {
+pub fn is_storage_empty(list: &HashMap<GameResource, i32>) -> bool {
     let mut count: i32 = 0;
     list.into_iter().for_each(|(_, amount)| count += amount);
     return count <= 0;
+}
+
+pub fn update_construction_hover(
+    world: &mut World,
+    raylib_handle: &mut RaylibHandle,
+    camera: &Camera2D,
+) {
+    let mut query = world.query::<(&mut ConstructionPlacement, &mut CollisionBox, &mut Sprite)>();
+    query
+        .into_iter()
+        .for_each(|(_, (placement, col_box, sprite))| {
+            let mouse_pos =
+                raylib_handle.get_screen_to_world2D(raylib_handle.get_mouse_position(), camera);
+            let mut current_tile_x = (mouse_pos.x / TILE_SIZE) as i32;
+            let mut current_tile_y = (mouse_pos.y / TILE_SIZE) as i32;
+
+            if mouse_pos.x < 0.0 {
+                current_tile_x -= 1;
+            }
+            if mouse_pos.y < 0.0 {
+                current_tile_y -= 1;
+            }
+
+            placement.position.x = current_tile_x as f32 * TILE_SIZE;
+            placement.position.y = current_tile_y as f32 * TILE_SIZE;
+            col_box.rect.x = placement.position.x;
+            col_box.rect.y = placement.position.y;
+            sprite.position = placement.position;
+        });
+}
+
+pub fn place_hovering_building(world: &mut World, raylib_handle: &mut RaylibHandle) -> Result<(), String> {
+    if raylib_handle.is_mouse_button_released(MOUSE_LEFT_BUTTON) {
+        let mut m_building: Option<Entity> = None;
+        {
+            let query =
+                world.query_mut::<(&ConstructionPlacement, &TriggerCollision, &mut Sprite)>();
+            query
+                .into_iter()
+                .for_each(|(entity, (placement, trigger, mut sprite))| {
+                    if !trigger.colliding {
+                        sprite.position = placement.position;
+                        m_building = Some(entity);
+                    }
+                });
+        }
+
+        {
+            if let Some(building) = m_building {
+                world.remove_one::<ConstructionPlacement>(building).map_err(|_| "Component error")?;
+            }
+        }
+    }
+    
+    Ok(())
+}
+
+pub fn check_construction_resources(world: &mut World) -> Result<(), String> {
+    let mut building_list: Vec<Entity> = vec![];
+
+    {
+        let mut query = world.query::<&ConstructionStorage>();
+        query.into_iter().for_each(|(entity, storage)| {
+            if is_storage_empty(&storage.required_item_list) {
+                building_list.push(entity);
+            }
+        });
+    }
+
+    for building in building_list.into_iter() {
+        world.remove_one::<ConstructionStorage>(building).map_err(|_| "Component error")?;
+        world
+            .insert_one(
+                building,
+                OngoingConstruction {
+                    work_required: 100.0,
+                },
+            )
+            .map_err(|_| "No such entity")?;
+    };
+
+    Ok(())
 }
