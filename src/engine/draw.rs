@@ -1,3 +1,5 @@
+use std::ffi::CString;
+
 use hecs::World;
 // use raylib::ffi::Font;
 use raylib::prelude::*;

@@ -13,8 +13,7 @@ use crate::{
         buildings::{house::spawn_finished_house, warehouse::spawn_finished_warehouse},
         constants::*,
         input::{toggle_debug_text, toggle_draw_collisions},
-        tasks::OpenTasks,
-        tilemap::generate_tilemap,
+        scenes::{ActiveScene, Scene},
         villagers::hauler::spawn_hauler,
     },
 };
@@ -22,19 +21,23 @@ use crate::{
 use super::{
     buildings::house::spawn_house_placement,
     constants::TILE_SIZE,
+    scenes::test_map_scene::setup_test_map,
     ui::datatypes::{ActiveTaskCountLabel, GlobalStorageLabel, IdleTaskCountLabel, SelectedHauler},
 };
 
-pub fn game_setup(world: &mut World, _raylib_handle: &mut RaylibHandle, _thread: &RaylibThread) -> Result<(), String> {
-    generate_tilemap(world, 1024, 1024);
-
-    world.spawn((OpenTasks::default(),));
-
-    spawn_buildings(world);
-    spawn_villagers(world);
-    spawn_ui(world)?;
-
-    Ok(())
+pub fn game_setup(
+    world: &mut World,
+    raylib_handle: &mut RaylibHandle,
+    thread: &RaylibThread,
+) -> Result<(), String> {
+    let m_global_storage = world.query_mut::<&ActiveScene>().into_iter().nth(0);
+    Ok(if let Some((_, active_scene)) = m_global_storage {
+        return match active_scene.scene {
+            Scene::TestMap => setup_test_map(world, raylib_handle, thread),
+            Scene::MainMenu => Ok(()),
+            Scene::TestMap2 => Ok(()),
+        };
+    })
 }
 
 pub fn spawn_villagers(world: &mut World) {
@@ -116,7 +119,7 @@ pub fn spawn_ui(world: &mut World) -> Result<(), String> {
         Vector2 { x: 0.0, y: 1.0 },
         TILE_SIZE,
         Some(|world| -> Result<(), String> {
-            let storage: HashMap<GameResource, i32> = HashMap::from([(GameResource::Wood, 40)]); 
+            let storage: HashMap<GameResource, i32> = HashMap::from([(GameResource::Wood, 40)]);
             spawn_finished_warehouse(world, Vector2 { x: 304.0, y: 48.0 }, storage);
             Ok(())
         }),
@@ -135,7 +138,9 @@ pub fn spawn_ui(world: &mut World) -> Result<(), String> {
         1.0,
         Color::BLACK,
     );
-    world.insert(label, (IdleTaskCountLabel,)).map_err(|_| "No such entity")?;
+    world
+        .insert(label, (IdleTaskCountLabel,))
+        .map_err(|_| "No such entity")?;
     let label = spawn_label(
         world,
         Vector2 {
@@ -148,7 +153,9 @@ pub fn spawn_ui(world: &mut World) -> Result<(), String> {
         1.0,
         Color::BLACK,
     );
-    world.insert(label, (ActiveTaskCountLabel,)).map_err(|_| "No such entity")?;
+    world
+        .insert(label, (ActiveTaskCountLabel,))
+        .map_err(|_| "No such entity")?;
     let label = spawn_label(
         world,
         Vector2 {
@@ -161,6 +168,8 @@ pub fn spawn_ui(world: &mut World) -> Result<(), String> {
         1.0,
         Color::BLACK,
     );
-    world.insert(label, (GlobalStorageLabel,)).map_err(|_| "No such entity")?;
+    world
+        .insert(label, (GlobalStorageLabel,))
+        .map_err(|_| "No such entity")?;
     Ok(())
 }

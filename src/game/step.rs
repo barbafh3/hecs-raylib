@@ -1,28 +1,24 @@
 use hecs::World;
-use raylib::{RaylibHandle, text::Font};
+use raylib::{text::Font, RaylibHandle};
 
-use crate::{
-    engine::collision::{detect_body_collisions, detect_trigger_collisions}, 
-    game::{
-        villagers::step::update_villagers, 
-        tasks::update_tasks, 
-        buildings::step::update_buildings
-    }
+use super::scenes::{
+    main_menu_scene::update_main_menu_scene, test_map_scene::update_test_map_scene, ActiveScene,
+    Scene,
 };
 
-use super::ui::step::update_ui;
-
-
-pub fn update_game(world: &mut World, raylib_handle: &mut RaylibHandle, font: &Font) -> Result<(), String> {
+pub fn update_game(
+    world: &mut World,
+    raylib_handle: &mut RaylibHandle,
+    font: &Font,
+) -> Result<(), String> {
     let delta = raylib_handle.get_frame_time();
 
-    update_tasks(world)?;
-    update_villagers(world, delta);
-    update_buildings(world)?;
-    detect_body_collisions(world);
-    detect_trigger_collisions(world);
-
-    update_ui(world, font)?;
-
-    Ok(())
+    let m_global_storage = world.query_mut::<&ActiveScene>().into_iter().nth(0);
+    Ok(if let Some((_, active_scene)) = m_global_storage {
+        return match active_scene.scene {
+            Scene::TestMap => update_test_map_scene(world, font, delta),
+            Scene::MainMenu => update_main_menu_scene(world, font, delta),
+            Scene::TestMap2 => todo!(),
+        };
+    })
 }
